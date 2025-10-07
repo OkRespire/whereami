@@ -66,13 +66,12 @@ fn view(state: &AppState) -> Element<Message> {
             .on_press(Message::ClientSelected(workspace_id));
         content = content.push(client_button);
     }
-    content.into()
+    content.padding(10).spacing(4).into()
 }
 fn main() -> iced::Result {
     iced::application("HyprSwitch", update, view)
-        .theme(|_| iced::Theme::TokyoNight)
+        .theme(|_| iced::Theme::GruvboxDark)
         .window(iced::window::Settings {
-            size: iced::Size::new(800.0, 600.0),
             position: iced::window::Position::Centered,
             decorations: false,
             transparent: true,
