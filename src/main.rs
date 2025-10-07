@@ -69,7 +69,7 @@ fn view(state: &AppState) -> Element<Message> {
     content.padding(10).spacing(4).into()
 }
 fn main() -> iced::Result {
-    iced::application("HyprSwitch", update, view)
+    iced::application("whereami", update, view)
         .theme(|_| iced::Theme::GruvboxDark)
         .window(iced::window::Settings {
             position: iced::window::Position::Centered,
