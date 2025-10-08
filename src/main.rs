@@ -99,6 +99,7 @@ fn update(state: &mut AppState, msg: Message) -> Task<Message> {
         Message::DoNothing => Task::none(),
     }
 }
+
 fn view(state: &AppState) -> Element<'_, Message> {
     let mut sorted_clients = state.clients.clone();
     sorted_clients.sort_by(|a, b| {
@@ -170,10 +171,6 @@ fn view(state: &AppState) -> Element<'_, Message> {
         .collect();
 
     column(items).width(Length::Fill).into()
-
-    // content = content.push(client_button);
-    //
-    // content.padding(10).spacing(4).into()
 }
 
 fn main() -> iced::Result {
