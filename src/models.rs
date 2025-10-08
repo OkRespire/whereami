@@ -4,6 +4,8 @@ pub struct Client {
     pub title: Option<String>,
     pub class: String,
     pub workspace: Option<Workspace>,
+    pub fullscreen: i32,
+    pub floating: bool,
 }
 
 #[derive(Debug, serde::Deserialize, Clone)]

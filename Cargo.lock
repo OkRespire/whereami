@@ -1388,17 +1388,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dfa686283ad6dd069f105e5ab091b04c62850d3e4cf5d67debad1933f55023df"
 
 [[package]]
-name = "hypr-alt-tab"
-version = "0.1.0"
-dependencies = [
- "iced",
- "rayon",
- "serde",
- "serde_json",
- "tokio",
-]
-
-[[package]]
 name = "iced"
 version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3667,6 +3656,18 @@ dependencies = [
  "bitflags 2.9.4",
  "js-sys",
  "web-sys",
+]
+
+[[package]]
+name = "whereami"
+version = "0.1.0"
+dependencies = [
+ "iced",
+ "iced_core",
+ "rayon",
+ "serde",
+ "serde_json",
+ "tokio",
 ]
 
 [[package]]
