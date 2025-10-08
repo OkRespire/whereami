@@ -15,6 +15,7 @@ pub enum Message {
     Quit,
     ClientSelected,
     Navigate(Direction),
+    DoNothing,
 }
 
 pub struct AppState {
@@ -47,8 +48,7 @@ fn subscription(_state: &AppState) -> iced::Subscription<Message> {
                 Some(Message::Navigate(Direction::Down))
             }
             Key::Named(iced::keyboard::key::Named::Enter) => Some(Message::ClientSelected),
-            Key::Unidentified => todo!(),
-            _ => todo!(),
+            _ => Some(Message::DoNothing),
         }
     }
     iced::Subscription::batch(vec![
@@ -96,6 +96,7 @@ fn update(state: &mut AppState, msg: Message) -> Task<Message> {
                 Task::none()
             }
         }
+        Message::DoNothing => Task::none(),
     }
 }
 fn view(state: &AppState) -> Element<'_, Message> {
@@ -112,7 +113,16 @@ fn view(state: &AppState) -> Element<'_, Message> {
         .map(|(idx, client)| -> _ {
             let is_selected = idx == state.selected_idx;
             let title = client.title.as_deref().unwrap_or("No title");
-            let workspace_id = client.workspace.as_ref().map(|w| w.id).unwrap_or(0);
+            let workspace_id = client
+                .workspace
+                .as_ref()
+                .map(|w| {
+                    if w.id < 0 {
+                        return 100;
+                    }
+                    w.id
+                })
+                .unwrap_or(0);
             let status = match client.fullscreen {
                 1 => "Fullscreen",
                 2 => "Maximised",
@@ -173,8 +183,6 @@ fn main() -> iced::Result {
             position: iced::window::Position::Centered,
             decorations: false,
             transparent: true,
-            level: iced::window::Level::AlwaysOnTop,
-
             ..Default::default()
         })
         .subscription(subscription)
