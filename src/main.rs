@@ -118,9 +118,6 @@ fn view(state: &AppState) -> Element<'_, Message> {
                 .workspace
                 .as_ref()
                 .map(|w| {
-                    if w.id < 0 {
-                        return 100;
-                    }
                     w.id
                 })
                 .unwrap_or(0);
@@ -136,7 +133,12 @@ fn view(state: &AppState) -> Element<'_, Message> {
                 }
             };
 
-            let text_content = format!("{}@Workspace: {} [{}]", title, workspace_id, status);
+            let text_content = if workspace_id < 0 {
+
+                format!("{}@Workspace: Special Workspace [{}]", title, status)
+            }else {
+                format!("{}@Workspace: {} [{}]", title, workspace_id, status)
+            };
             let item_content: iced_core::widget::text::Text<'_, _, Renderer> = text(text_content);
 
             let styled = if is_selected {
