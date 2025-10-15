@@ -114,13 +114,7 @@ fn view(state: &AppState) -> Element<'_, Message> {
         .map(|(idx, client)| -> _ {
             let is_selected = idx == state.selected_idx;
             let title = client.title.as_deref().unwrap_or("No title");
-            let workspace_id = client
-                .workspace
-                .as_ref()
-                .map(|w| {
-                    w.id
-                })
-                .unwrap_or(0);
+            let workspace_id = client.workspace.as_ref().map(|w| w.id).unwrap_or(0);
             let status = match client.fullscreen {
                 1 => "Fullscreen",
                 2 => "Maximised",
@@ -134,9 +128,8 @@ fn view(state: &AppState) -> Element<'_, Message> {
             };
 
             let text_content = if workspace_id < 0 {
-
                 format!("{}@Workspace: Special Workspace [{}]", title, status)
-            }else {
+            } else {
                 format!("{}@Workspace: {} [{}]", title, workspace_id, status)
             };
             let item_content: iced_core::widget::text::Text<'_, _, Renderer> = text(text_content);
@@ -182,6 +175,7 @@ fn main() -> iced::Result {
             position: iced::window::Position::Centered,
             decorations: false,
             transparent: true,
+            size: iced::Size::new(400.0, 300.0),
             ..Default::default()
         })
         .subscription(subscription)
