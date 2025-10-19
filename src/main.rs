@@ -1,10 +1,12 @@
+mod config_management;
 mod hyprctl;
 mod models;
-mod utils;
 use std::process;
 
+use config_management::Config;
 use iced::keyboard::{self, Key};
-use iced::widget::{column, container, text};
+use iced::widget::scrollable::AbsoluteOffset;
+use iced::widget::{Scrollable, column, container, scrollable, text};
 use iced::{Border, Color, Element, Length, Renderer, Task, Theme};
 use models::Client;
 
@@ -21,6 +23,7 @@ pub enum Message {
 pub struct AppState {
     clients: Vec<Client>,
     selected_idx: usize,
+    scroll_id: scrollable::Id,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -34,9 +37,13 @@ impl Default for AppState {
         AppState {
             clients: hyprctl::get_clients(),
             selected_idx: 0,
+
+            scroll_id: scrollable::Id::new("item_scroll"),
         }
     }
 }
+
+const ITEM_HEIGHT: f32 = 36.0;
 
 fn subscription(_state: &AppState) -> iced::Subscription<Message> {
     fn handle_keys(key: Key, _modifiers: keyboard::Modifiers) -> Option<Message> {
@@ -86,15 +93,21 @@ fn update(state: &mut AppState, msg: Message) -> Task<Message> {
                 } else {
                     state.selected_idx -= 1;
                 }
-                Task::none()
             } else {
                 if state.selected_idx == state.clients.len() - 1 {
                     state.selected_idx = 0;
                 } else {
                     state.selected_idx += 1;
                 }
-                Task::none()
             }
+
+            scrollable::scroll_to::<Message>(
+                state.scroll_id.clone(),
+                AbsoluteOffset {
+                    x: 0.0,
+                    y: state.selected_idx as f32 * ITEM_HEIGHT,
+                },
+            )
         }
         Message::DoNothing => Task::none(),
     }
@@ -165,7 +178,9 @@ fn view(state: &AppState) -> Element<'_, Message> {
         })
         .collect();
 
-    column(items).width(Length::Fill).into()
+    Scrollable::new(column(items).width(Length::Fill))
+        .id(state.scroll_id.clone())
+        .into()
 }
 
 fn main() -> iced::Result {
@@ -175,7 +190,7 @@ fn main() -> iced::Result {
             position: iced::window::Position::Centered,
             decorations: false,
             transparent: true,
-            size: iced::Size::new(400.0, 300.0),
+            size: iced::Size::new(600.0, 400.0),
             ..Default::default()
         })
         .subscription(subscription)
