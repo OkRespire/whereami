@@ -1,7 +1,7 @@
 mod config_management;
 mod hyprctl;
 mod models;
-use std::process;
+use std::{path, process};
 
 use config_management::Config;
 use iced::keyboard::{self, Key};
@@ -81,6 +81,7 @@ fn update(state: &mut AppState, msg: Message) -> Task<Message> {
                 .as_ref()
                 .map(|w| w.id)
                 .unwrap_or(0);
+            println!("{:?}", state.clients[client_idx].title);
             Task::perform(
                 async move { hyprctl::focus_window(workspace_num).await },
                 |_| Message::Quit,
@@ -114,14 +115,8 @@ fn update(state: &mut AppState, msg: Message) -> Task<Message> {
 }
 
 fn view(state: &AppState) -> Element<'_, Message> {
-    let mut sorted_clients = state.clients.clone();
-    sorted_clients.sort_by(|a, b| {
-        let ws_a = a.workspace.as_ref().map(|w| w.id).unwrap_or(0);
-        let ws_b = b.workspace.as_ref().map(|w| w.id).unwrap_or(0);
-        ws_a.cmp(&ws_b)
-    });
-
-    let items: Vec<_> = sorted_clients
+    let items: Vec<_> = state
+        .clients
         .iter()
         .enumerate()
         .map(|(idx, client)| -> _ {
@@ -184,13 +179,14 @@ fn view(state: &AppState) -> Element<'_, Message> {
 }
 
 fn main() -> iced::Result {
+    let config = config_management::Config::new().expect("Failed to load config");
     iced::application("whereami", update, view)
         .theme(|_| iced::Theme::GruvboxDark)
         .window(iced::window::Settings {
             position: iced::window::Position::Centered,
-            decorations: false,
-            transparent: true,
-            size: iced::Size::new(600.0, 400.0),
+            decorations: config.window.decorations,
+            transparent: config.window.transparent,
+            size: iced::Size::new(config.window.width, config.window.height),
             ..Default::default()
         })
         .subscription(subscription)
