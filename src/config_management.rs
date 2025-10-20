@@ -1,6 +1,5 @@
 use iced::{Color, Theme, theme::Palette};
 use serde::Deserialize;
-use serde_json::to_string;
 use std::{
     fs,
     io::{self, Write},
@@ -64,6 +63,7 @@ pub struct Behavior {
 impl Default for Config {
     fn default() -> Self {
         Config {
+            theme: None,
             window: Window {
                 width: 600.0,
                 height: 400.0,
