@@ -10,6 +10,8 @@ use iced::widget::{Scrollable, column, container, scrollable, text};
 use iced::{Border, Color, Element, Length, Renderer, Task, Theme};
 use models::Client;
 
+use crate::config_management::parse_color;
+
 #[derive(Debug, Clone)]
 pub enum Message {
     LoadClients,
@@ -24,6 +26,7 @@ pub struct AppState {
     clients: Vec<Client>,
     selected_idx: usize,
     scroll_id: scrollable::Id,
+    config: config_management::Config,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -34,18 +37,18 @@ pub enum Direction {
 
 impl Default for AppState {
     fn default() -> Self {
+        let config = config_management::Config::new().expect("Failed to load config");
         AppState {
             clients: hyprctl::get_clients(),
             selected_idx: 0,
 
             scroll_id: scrollable::Id::new("item_scroll"),
+            config: config,
         }
     }
 }
 
-const ITEM_HEIGHT: f32 = 36.0;
-
-fn subscription(_state: &AppState) -> iced::Subscription<Message> {
+fn subscription(state: &AppState) -> iced::Subscription<Message> {
     fn handle_keys(key: Key, _modifiers: keyboard::Modifiers) -> Option<Message> {
         match key.as_ref() {
             Key::Named(iced::keyboard::key::Named::ArrowUp) => {
@@ -59,7 +62,10 @@ fn subscription(_state: &AppState) -> iced::Subscription<Message> {
         }
     }
     iced::Subscription::batch(vec![
-        iced::time::every(std::time::Duration::from_secs(1)).map(|_| Message::LoadClients),
+        iced::time::every(std::time::Duration::from_secs(
+            state.config.behavior.refresh_interval,
+        ))
+        .map(|_| Message::LoadClients),
         keyboard::on_key_press(handle_keys),
     ])
 }
@@ -88,6 +94,7 @@ fn update(state: &mut AppState, msg: Message) -> Task<Message> {
             )
         }
         Message::Navigate(dir) => {
+            let item_height = state.config.layout.padding + state.config.font.size;
             if dir.eq(&Direction::Up) {
                 if state.selected_idx == 0 {
                     state.selected_idx = state.clients.len() - 1;
@@ -106,7 +113,7 @@ fn update(state: &mut AppState, msg: Message) -> Task<Message> {
                 state.scroll_id.clone(),
                 AbsoluteOffset {
                     x: 0.0,
-                    y: state.selected_idx as f32 * ITEM_HEIGHT,
+                    y: state.selected_idx as f32 * item_height,
                 },
             )
         }
@@ -149,24 +156,24 @@ fn view(state: &AppState) -> Element<'_, Message> {
                         background: Some(theme.palette().primary.into()),
                         text_color: Some(theme.palette().background.into()),
                         border: Border {
-                            radius: 4.0.into(),
+                            radius: state.config.layout.border_radius.into(),
                             ..Default::default()
                         },
                         ..Default::default()
                     })
-                    .padding(10)
+                    .padding(state.config.layout.padding)
             } else {
                 container(item_content)
                     .style(|theme: &Theme| container::Style {
                         background: Some(Color::TRANSPARENT.into()),
                         text_color: Some(theme.palette().text.into()),
                         border: Border {
-                            radius: 4.0.into(),
+                            radius: state.config.layout.border_radius.into(),
                             ..Default::default()
                         },
                         ..Default::default()
                     })
-                    .padding(10)
+                    .padding(state.config.layout.padding)
             };
 
             Element::from(styled)
@@ -180,8 +187,10 @@ fn view(state: &AppState) -> Element<'_, Message> {
 
 fn main() -> iced::Result {
     let config = config_management::Config::new().expect("Failed to load config");
+
+    let theme = config.get_theme();
     iced::application("whereami", update, view)
-        .theme(|_| iced::Theme::GruvboxDark)
+        .theme(move |_| theme.clone())
         .window(iced::window::Settings {
             position: iced::window::Position::Centered,
             decorations: config.window.decorations,

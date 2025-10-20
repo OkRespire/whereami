@@ -29,7 +29,6 @@ pub struct Colors {
     pub text: String,
     pub selected_background: String,
     pub selected_text: String,
-    pub border: String,
 }
 
 #[derive(Deserialize)]
@@ -42,7 +41,7 @@ pub struct ColorsStatus {
 
 #[derive(Deserialize)]
 pub struct Font {
-    size: f32,
+    pub size: f32,
     // family: Option<String>,  // optional field
 }
 
@@ -51,7 +50,6 @@ pub struct Layout {
     pub padding: f32,
     pub spacing: f32,
     pub border_radius: f32,
-    pub item_height: f32,
 }
 
 #[derive(Deserialize)]
@@ -75,14 +73,12 @@ impl Default for Config {
                 text: "#ebdbb2".to_string(),
                 selected_background: "#458588".to_string(),
                 selected_text: "#282828".to_string(),
-                border: "#3c3836".to_string(),
             },
             font: Font { size: 14.0 },
             layout: Layout {
                 padding: 10.0,
                 spacing: 5.0,
                 border_radius: 4.0,
-                item_height: 36.0,
             },
             behavior: Behavior {
                 wrap_navigation: true,
@@ -131,7 +127,6 @@ impl Config {
             text = \"#ebdbb2\"
             selected_background = \"#458588\"
             selected_text = \"#282828\"
-            border = \"#3c3836\"
 
             [colors.status]
             fullscreen = \"#fb4934\"
@@ -146,7 +141,6 @@ impl Config {
             padding = 10
             spacing = 5
             border_radius = 4
-            item_height = 36
 
             [behavior]
             wrap_navigation = true
@@ -185,21 +179,21 @@ impl Config {
     }
     pub fn to_theme(&self) -> Theme {
         let palette = Palette {
-            background: self.parse_color(&self.colors.background),
-            text: self.parse_color(&self.colors.text),
-            primary: self.parse_color(&self.colors.selected_background),
-            success: self.parse_color(&self.colors.background),
-            danger: self.parse_color(&self.colors.background),
+            background: parse_color(&self.colors.background),
+            text: parse_color(&self.colors.text),
+            primary: parse_color(&self.colors.selected_background),
+            success: parse_color(&self.colors.background),
+            danger: parse_color(&self.colors.background),
         };
 
         Theme::custom("user-made palette".to_string(), palette)
     }
+}
 
-    fn parse_color(&self, val: &String) -> Color {
-        let hex = val.trim_start_matches("#");
-        let r = u8::from_str_radix(&hex[0..2], 16).unwrap_or(0);
-        let g = u8::from_str_radix(&hex[2..4], 16).unwrap_or(0);
-        let b = u8::from_str_radix(&hex[4..6], 16).unwrap_or(0);
-        Color::from_rgb8(r, g, b)
-    }
+pub fn parse_color(val: &String) -> Color {
+    let hex = val.trim_start_matches("#");
+    let r = u8::from_str_radix(&hex[0..2], 16).unwrap_or(0);
+    let g = u8::from_str_radix(&hex[2..4], 16).unwrap_or(0);
+    let b = u8::from_str_radix(&hex[4..6], 16).unwrap_or(0);
+    Color::from_rgb8(r, g, b)
 }
