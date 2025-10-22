@@ -58,6 +58,7 @@ fn subscription(state: &AppState) -> iced::Subscription<Message> {
                 Some(Message::Navigate(Direction::Down))
             }
             Key::Named(iced::keyboard::key::Named::Enter) => Some(Message::ClientSelected),
+            Key::Named(iced::keyboard::key::Named::Escape) => Some(Message::Quit),
             _ => Some(Message::DoNothing),
         }
     }
