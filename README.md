@@ -1,15 +1,18 @@
 # whereami
 
-A simple process viewer for Hyprland
+A keyboard-driven window switcher for Hyprland, inspired by rofi.
 
 ## Features
 
-- Focus a window by clicking on it
-- Sort windows by workspace
-- Quit the window manager
-- Find where processes are.
+- Navigate windows with arrow keys
+- See which workspace each window is on
+- Shows window state (tiled, floating, fullscreen, maximized)
+- Configurable theming via TOML
 
 
+## Requirements
+- Hyprland
+- Rust (for building)
 
 ## Install
 
@@ -27,13 +30,25 @@ $ nix profile install
 
 **Every other system**
 
-Follow first two commands of the NixOS portion then
-
+**Other systems**
 ```bash
-$ cargo build --release
-$ cd target/release
-$ ./whereami
+git clone https://github.com/OkRespire/whereami.git
+cd whereami
+cargo install --path .
 ```
 
+## Usage
+- Launch with 'whereami' in the terminal, or bind in your Hyprland config
+```
+bind = SUPER, D, exec, whereami
+```
+
+- Arrow keys up/down = navigate
+- Escape = exit
+- Enter = focus selected window
+
+## Configuration
+- found in $HOME/.config/whereami/config.toml (auto-generated on first run)
+- basic customisation provided (for now, some are not implemented)
 
 *I will try to release it on package managers, maybe*
