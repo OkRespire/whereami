@@ -28,7 +28,7 @@ $ nix profile install
 
 
 
-**Every other system**
+**Every other system (Linux)**
 
 **Other systems**
 ```bash
