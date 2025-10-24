@@ -1,9 +1,10 @@
 mod config_management;
 mod hyprctl;
 mod models;
-use std::{path, process};
+use std::os::unix::fs::FileExt;
+use std::{fs, path, process};
 
-use config_management::Config;
+use fd_lock::{self, RwLock};
 use iced::keyboard::{self, Key};
 use iced::widget::scrollable::AbsoluteOffset;
 use iced::widget::{Scrollable, column, container, scrollable, text};
@@ -186,7 +187,40 @@ fn view(state: &AppState) -> Element<'_, Message> {
         .into()
 }
 
+fn acquire_lock() -> fd_lock::RwLockWriteGuard<'static, std::fs::File> {
+    let pid_loc = "/tmp/whereami.pid";
+    let file = fs::OpenOptions::new()
+        .write(true)
+        .create(true)
+        .open(pid_loc)
+        .expect("Failed to open lock file");
+
+    let lock = Box::leak(Box::new(RwLock::new(file)));
+
+    match lock.try_write() {
+        Ok(guard) => {
+            let pid = process::id().to_string();
+            guard
+                .write_at(pid.as_bytes(), 0)
+                .expect("Failed to write PID");
+            guard
+                .set_len(pid.len() as u64)
+                .expect("Failed to truncate file");
+            guard
+        }
+        Err(_) => {
+            let old_pid = std::fs::read_to_string(pid_loc).expect("Failed to read file");
+            eprintln!(
+                "Another instance is already running using this PID {}, at location {}",
+                old_pid, pid_loc
+            );
+            std::process::exit(1);
+        }
+    }
+}
+
 fn main() -> iced::Result {
+    let _lock = acquire_lock();
     let config = config_management::Config::new().expect("Failed to load config");
 
     let theme = config.get_theme();

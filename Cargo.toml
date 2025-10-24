@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+fd-lock = "4.0.4"
 iced = { version = "0.13.1", features = ["tokio", "debug"] }
 iced_core = "0.13.2"
 rayon = "1.11.0"
