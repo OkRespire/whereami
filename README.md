@@ -1,7 +1,4 @@
 # whereami
-
-A keyboard-driven window switcher for Hyprland, inspired by rofi.
-
 ## Features
 
 - Navigate windows with arrow keys
