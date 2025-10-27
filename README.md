@@ -38,6 +38,10 @@ cargo install --path .
 - Launch with 'whereami' in the terminal, or bind in your Hyprland config
 ```
 bind = SUPER, D, exec, whereami
+
+# for window rules
+windowrulev2 = float, title:(whereami)
+windowrulev2 = center, title:(whereami)
 ```
 
 - Arrow keys up/down = navigate
