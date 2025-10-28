@@ -128,57 +128,62 @@ fn view(state: &AppState) -> Element<'_, Message> {
         .clients
         .iter()
         .enumerate()
-        .map(|(idx, client)| -> _ {
-            let is_selected = idx == state.selected_idx;
-            let title = client.title.as_deref().unwrap_or("No title");
-            let workspace_id = client.workspace.as_ref().map(|w| w.id).unwrap_or(0);
-            let status = match client.fullscreen {
-                1 => "Fullscreen",
-                2 => "Maximised",
-                _ => {
-                    if client.floating {
-                        "Float"
-                    } else {
-                        "Tiled"
+        .filter_map(|(idx, client)| {
+            if client.title.as_deref().unwrap_or("No Title") != "whereami" {
+                let is_selected = idx == state.selected_idx;
+                let title = client.title.as_deref().unwrap_or("No title");
+                let workspace_id = client.workspace.as_ref().map(|w| w.id).unwrap_or(0);
+                let status = match client.fullscreen {
+                    1 => "Fullscreen",
+                    2 => "Maximised",
+                    _ => {
+                        if client.floating {
+                            "Float"
+                        } else {
+                            "Tiled"
+                        }
                     }
-                }
-            };
+                };
 
-            let text_content = if workspace_id < 0 {
-                format!("{}@Workspace: Special Workspace [{}]", title, status)
-            } else {
-                format!("{}@Workspace: {} [{}]", title, workspace_id, status)
-            };
-            let item_content: iced_core::widget::text::Text<'_, _, Renderer> = text(text_content);
+                let text_content = if workspace_id < 0 {
+                    format!("{}@Workspace: Special Workspace [{}]", title, status)
+                } else {
+                    format!("{}@Workspace: {} [{}]", title, workspace_id, status)
+                };
+                let item_content: iced_core::widget::text::Text<'_, _, Renderer> =
+                    text(text_content);
 
-            let styled = if is_selected {
-                container(item_content)
-                    .style(|theme: &Theme| container::Style {
-                        // Using Iced's built-in palette for primary/background
-                        background: Some(theme.palette().primary.into()),
-                        text_color: Some(theme.palette().background.into()),
-                        border: Border {
-                            radius: state.config.layout.border_radius.into(),
+                let styled = if is_selected {
+                    container(item_content)
+                        .style(|theme: &Theme| container::Style {
+                            // Using Iced's built-in palette for primary/background
+                            background: Some(theme.palette().primary.into()),
+                            text_color: Some(theme.palette().background.into()),
+                            border: Border {
+                                radius: state.config.layout.border_radius.into(),
+                                ..Default::default()
+                            },
                             ..Default::default()
-                        },
-                        ..Default::default()
-                    })
-                    .padding(state.config.layout.padding)
-            } else {
-                container(item_content)
-                    .style(|theme: &Theme| container::Style {
-                        background: Some(Color::TRANSPARENT.into()),
-                        text_color: Some(theme.palette().text.into()),
-                        border: Border {
-                            radius: state.config.layout.border_radius.into(),
+                        })
+                        .padding(state.config.layout.padding)
+                } else {
+                    container(item_content)
+                        .style(|theme: &Theme| container::Style {
+                            background: Some(Color::TRANSPARENT.into()),
+                            text_color: Some(theme.palette().text.into()),
+                            border: Border {
+                                radius: state.config.layout.border_radius.into(),
+                                ..Default::default()
+                            },
                             ..Default::default()
-                        },
-                        ..Default::default()
-                    })
-                    .padding(state.config.layout.padding)
-            };
+                        })
+                        .padding(state.config.layout.padding)
+                };
 
-            Element::from(styled)
+                Some(Element::from(styled))
+            } else {
+                None
+            }
         })
         .collect();
 
