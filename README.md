@@ -1,7 +1,7 @@
 # whereami
 ## Features
 
-- Navigate windows with arrow keys
+- Navigate windows with arrow keys and mouse
 - See which workspace each window is on
 - Shows window state (tiled, floating, fullscreen, maximized)
 - Configurable theming via TOML
