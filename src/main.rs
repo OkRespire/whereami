@@ -1,14 +1,18 @@
+/*
+ * All the commented out print statements are for debugging purporses
+ * */
+
 mod config_management;
 mod hyprctl;
 mod models;
 use std::os::unix::fs::FileExt;
-use std::{fs, path, process};
+use std::{fs, process};
 
 use fd_lock::{self, RwLock};
 use iced::keyboard::{self, Key};
 use iced::widget::scrollable::AbsoluteOffset;
-use iced::widget::{Scrollable, column, container, scrollable, text};
-use iced::{Border, Color, Element, Length, Renderer, Task, Theme};
+use iced::widget::{Scrollable, column, container, mouse_area, row, scrollable, text};
+use iced::{Border, Color, Element, Length, Task, Theme};
 use models::Client;
 
 use crate::config_management::parse_color;
@@ -20,12 +24,17 @@ pub enum Message {
     Quit,
     ClientSelected,
     Navigate(Direction),
+    CloseWindow,
+    SelectAndFocus(usize),
+    SelectAndClose(usize),
+    HoverWindow(usize),
     DoNothing,
 }
 
 pub struct AppState {
     clients: Vec<Client>,
     selected_idx: usize,
+    // hovered_idx: usize,
     scroll_id: scrollable::Id,
     config: config_management::Config,
 }
@@ -42,7 +51,7 @@ impl Default for AppState {
         AppState {
             clients: hyprctl::get_clients(),
             selected_idx: 0,
-
+            // hovered_idx: 0,
             scroll_id: scrollable::Id::new("item_scroll"),
             config: config,
         }
@@ -60,6 +69,7 @@ fn subscription(state: &AppState) -> iced::Subscription<Message> {
             }
             Key::Named(iced::keyboard::key::Named::Enter) => Some(Message::ClientSelected),
             Key::Named(iced::keyboard::key::Named::Escape) => Some(Message::Quit),
+            Key::Named(iced::keyboard::key::Named::Delete) => Some(Message::CloseWindow),
             _ => Some(Message::DoNothing),
         }
     }
@@ -89,7 +99,7 @@ fn update(state: &mut AppState, msg: Message) -> Task<Message> {
                 .as_ref()
                 .map(|w| w.id)
                 .unwrap_or(0);
-            println!("{:?}", state.clients[client_idx].title);
+            // println!("{:?}", state.clients[client_idx].title);
             Task::perform(
                 async move { hyprctl::focus_window(workspace_num).await },
                 |_| Message::Quit,
@@ -110,6 +120,11 @@ fn update(state: &mut AppState, msg: Message) -> Task<Message> {
                     state.selected_idx += 1;
                 }
             }
+            // println!(
+            //     "{:?}\n{:?}",
+            //     state.clients[state.selected_idx].title,
+            //     state.clients[state.selected_idx].workspace
+            // );
 
             scrollable::scroll_to::<Message>(
                 state.scroll_id.clone(),
@@ -118,6 +133,38 @@ fn update(state: &mut AppState, msg: Message) -> Task<Message> {
                     y: state.selected_idx as f32 * item_height,
                 },
             )
+        }
+        Message::CloseWindow => {
+            let address = &state.clients[state.selected_idx].address;
+            // println!("{}\n{:?}", address, state.clients[state.selected_idx].title);
+            Task::perform(hyprctl::close_window(address.to_string()), |_| {
+                Message::LoadClients
+            })
+        }
+        Message::SelectAndFocus(idx) => {
+            state.selected_idx = idx;
+            let workspace_num = state.clients[idx]
+                .workspace
+                .as_ref()
+                .map(|w| w.id)
+                .unwrap_or(0);
+            Task::perform(
+                async move { hyprctl::focus_window(workspace_num).await },
+                |_| Message::Quit,
+            )
+        }
+        Message::SelectAndClose(idx) => {
+            state.selected_idx = idx;
+            let address = &state.clients[state.selected_idx].address;
+            // println!("{}\n{:?}", address, state.clients[state.selected_idx].title);
+            Task::perform(hyprctl::close_window(address.to_string()), |_| {
+                Message::LoadClients
+            })
+        }
+        Message::HoverWindow(idx) => {
+            // state.hovered_idx = idx;
+            state.selected_idx = idx;
+            Task::none()
         }
         Message::DoNothing => Task::none(),
     }
@@ -129,61 +176,80 @@ fn view(state: &AppState) -> Element<'_, Message> {
         .iter()
         .enumerate()
         .filter_map(|(idx, client)| {
-            if client.title.as_deref().unwrap_or("No Title") != "whereami" {
-                let is_selected = idx == state.selected_idx;
-                let title = client.title.as_deref().unwrap_or("No title");
-                let workspace_id = client.workspace.as_ref().map(|w| w.id).unwrap_or(0);
-                let status = match client.fullscreen {
-                    1 => "Fullscreen",
-                    2 => "Maximised",
-                    _ => {
-                        if client.floating {
-                            "Float"
-                        } else {
-                            "Tiled"
-                        }
+            let is_selected = idx == state.selected_idx;
+            let title = client.title.as_deref().unwrap_or("No title");
+            let workspace_id = client.workspace.as_ref().map(|w| w.id).unwrap_or(0);
+            // let is_hovered = state.hovered_idx == idx;
+            let status_col = match client.fullscreen {
+                1 => parse_color(&state.config.colors.status.fullscreen),
+                2 => parse_color(&state.config.colors.status.maximized),
+                _ => {
+                    if client.floating {
+                        parse_color(&state.config.colors.status.floating)
+                    } else {
+                        parse_color(&state.config.colors.status.tiled)
                     }
-                };
+                }
+            };
+            let status = match client.fullscreen {
+                1 => "Fullscreen",
+                2 => "Maximised",
+                _ => {
+                    if client.floating {
+                        "Float"
+                    } else {
+                        "Tiled"
+                    }
+                }
+            };
 
-                let text_content = if workspace_id < 0 {
-                    format!("{}@Workspace: Special Workspace [{}]", title, status)
-                } else {
-                    format!("{}@Workspace: {} [{}]", title, workspace_id, status)
-                };
-                let item_content: iced_core::widget::text::Text<'_, _, Renderer> =
-                    text(text_content);
-
-                let styled = if is_selected {
-                    container(item_content)
-                        .style(|theme: &Theme| container::Style {
-                            // Using Iced's built-in palette for primary/background
-                            background: Some(theme.palette().primary.into()),
-                            text_color: Some(theme.palette().background.into()),
-                            border: Border {
-                                radius: state.config.layout.border_radius.into(),
-                                ..Default::default()
-                            },
-                            ..Default::default()
-                        })
-                        .padding(state.config.layout.padding)
-                } else {
-                    container(item_content)
-                        .style(|theme: &Theme| container::Style {
-                            background: Some(Color::TRANSPARENT.into()),
-                            text_color: Some(theme.palette().text.into()),
-                            border: Border {
-                                radius: state.config.layout.border_radius.into(),
-                                ..Default::default()
-                            },
-                            ..Default::default()
-                        })
-                        .padding(state.config.layout.padding)
-                };
-
-                Some(Element::from(styled))
+            let title_part: iced_core::widget::Text<'_, _, _> = text(title);
+            let workspace_part = if workspace_id < 0 {
+                text("@Workspace: Special Workspace")
             } else {
-                None
-            }
+                text(format!("@Workspace: {}", workspace_id))
+            };
+            let status_part = text(format!("[{}]", status)).style(move |_| text::Style {
+                color: Some(status_col),
+            });
+
+            let item_content: iced::widget::Row<'_, _, _, _> =
+                row!(title_part, workspace_part, status_part).spacing(state.config.layout.spacing);
+
+            let styled = if is_selected {
+                container(item_content)
+                    .style(|theme: &Theme| container::Style {
+                        // Using Iced's built-in palette for primary/background
+                        background: Some(theme.palette().primary.into()),
+                        text_color: Some(theme.palette().background.into()),
+                        border: Border {
+                            radius: state.config.layout.border_radius.into(),
+                            ..Default::default()
+                        },
+                        ..Default::default()
+                    })
+                    .padding(state.config.layout.padding)
+            } else {
+                container(item_content)
+                    .style(|theme: &Theme| container::Style {
+                        background: Some(Color::TRANSPARENT.into()),
+                        text_color: Some(theme.palette().text.into()),
+                        border: Border {
+                            radius: state.config.layout.border_radius.into(),
+                            ..Default::default()
+                        },
+                        ..Default::default()
+                    })
+                    .padding(state.config.layout.padding)
+            };
+
+            let clickable = mouse_area(styled)
+                .on_press(Message::SelectAndFocus(idx))
+                .on_right_press(Message::SelectAndClose(idx))
+                .on_enter(Message::HoverWindow(idx))
+                .interaction(iced::mouse::Interaction::Pointer);
+
+            Some(Element::from(clickable))
         })
         .collect();
 

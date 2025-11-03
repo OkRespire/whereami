@@ -1,3 +1,7 @@
+/*
+ * All the commented out print statements are for debugging purporses
+ * */
+
 use std::process::Command;
 
 use crate::models::Client;
@@ -9,6 +13,7 @@ pub fn get_clients() -> Vec<Client> {
         .expect("Failed");
     let output = String::from_utf8_lossy(&cmd.stdout);
     let mut clients: Vec<Client> = serde_json::from_str(&output).expect("Invalid");
+    clients.retain(|client| client.title.as_deref() != Some("whereami"));
 
     clients.sort_by(|a, b| {
         let ws_a = a.workspace.as_ref().map(|w| w.id).unwrap_or(0);
@@ -20,11 +25,20 @@ pub fn get_clients() -> Vec<Client> {
 }
 
 pub async fn focus_window(id: i32) {
-    println!("Workspace:{}\n", id);
+    // println!("Workspace:{}\n", id);
     let command_arg = format!("workspace {}", id);
 
     let _ = Command::new("hyprctl")
         .args(["dispatch", &command_arg])
         .spawn()
         .expect("Failed to switch");
+}
+
+pub async fn close_window(address: String) {
+    let command_arg = format!("closewindow address:{}", address);
+
+    let _ = Command::new("hyprctl")
+        .args(["dispatch", &command_arg])
+        .spawn()
+        .expect("Failed to close window");
 }

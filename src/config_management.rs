@@ -29,6 +29,7 @@ pub struct Colors {
     pub text: String,
     pub selected_background: String,
     pub selected_text: String,
+    pub status: ColorsStatus,
 }
 
 #[derive(Deserialize)]
@@ -73,6 +74,12 @@ impl Default for Config {
                 text: "#ebdbb2".to_string(),
                 selected_background: "#458588".to_string(),
                 selected_text: "#282828".to_string(),
+                status: ColorsStatus {
+                    fullscreen: "#fb4934".to_string(),
+                    maximized: "#fabd2f".to_string(),
+                    floating: "#b8bb26".to_string(),
+                    tiled: "#83a598".to_string(),
+                },
             },
             font: Font { size: 14.0 },
             layout: Layout {
