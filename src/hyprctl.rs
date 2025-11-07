@@ -6,6 +6,8 @@ use std::process::Command;
 
 use crate::models::Client;
 
+/// Contacts hyprctl to get all clients and is processed by serde
+/// and then it is sorted by workspace order
 pub fn get_clients() -> Vec<Client> {
     let cmd = Command::new("hyprctl")
         .args(["clients", "-j"])
@@ -24,7 +26,9 @@ pub fn get_clients() -> Vec<Client> {
     clients
 }
 
+/// gets the workspace id and asks hyprctl (maybe politely) to switch to it
 pub async fn focus_window(id: i32) {
+    // // debug
     // println!("Workspace:{}\n", id);
     let command_arg = format!("workspace {}", id);
 
@@ -34,6 +38,7 @@ pub async fn focus_window(id: i32) {
         .expect("Failed to switch");
 }
 
+/// makes hyprctl close the window when the corresponding button is pressed.
 pub async fn close_window(address: String) {
     let command_arg = format!("closewindow address:{}", address);
 

@@ -44,9 +44,10 @@ windowrulev2 = float, title:(whereami)
 windowrulev2 = center, title:(whereami)
 ```
 
-- Arrow keys up/down = navigate
+- Arrow keys up/down = navigate (or use the mouse!)
 - Escape = exit
-- Enter = focus selected window
+- Enter/Left click = focus selected window
+- DEL/Right click = close selected window
 
 ## Configuration
 - found in $HOME/.config/whereami/config.toml (auto-generated on first run)

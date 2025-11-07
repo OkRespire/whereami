@@ -17,6 +17,7 @@ use models::Client;
 
 use crate::config_management::parse_color;
 
+/// Messages for allowing the application to understand what updates it has to do
 #[derive(Debug, Clone)]
 pub enum Message {
     LoadClients,
@@ -31,10 +32,12 @@ pub enum Message {
     DoNothing,
 }
 
+/// All the goodies for whereami. stores literally everything
+/// if you want to add something else you need to store,
+/// put it here!
 pub struct AppState {
     clients: Vec<Client>,
     selected_idx: usize,
-    // hovered_idx: usize,
     scroll_id: scrollable::Id,
     config: config_management::Config,
 }
@@ -58,7 +61,9 @@ impl Default for AppState {
     }
 }
 
+/// allows for multi threaded handling
 fn subscription(state: &AppState) -> iced::Subscription<Message> {
+    /// Any key handlers will be added here
     fn handle_keys(key: Key, _modifiers: keyboard::Modifiers) -> Option<Message> {
         match key.as_ref() {
             Key::Named(iced::keyboard::key::Named::ArrowUp) => {
@@ -73,6 +78,7 @@ fn subscription(state: &AppState) -> iced::Subscription<Message> {
             _ => Some(Message::DoNothing),
         }
     }
+    // how often the process list is refreshed
     iced::Subscription::batch(vec![
         iced::time::every(std::time::Duration::from_secs(
             state.config.behavior.refresh_interval,
@@ -120,6 +126,7 @@ fn update(state: &mut AppState, msg: Message) -> Task<Message> {
                     state.selected_idx += 1;
                 }
             }
+            // // debug
             // println!(
             //     "{:?}\n{:?}",
             //     state.clients[state.selected_idx].title,
@@ -203,8 +210,15 @@ fn view(state: &AppState) -> Element<'_, Message> {
                 }
             };
 
+            // These are split into parts so they can have different colours.
+            // implementation for ALL of these colours will be added sometime later.
+            // Currently only supports status colours
             let title_part: iced_core::widget::Text<'_, _, _> = text(title);
             let workspace_part = if workspace_id < 0 {
+                // atleast for me, my special workspace (in a
+                // scratch pad) is on workspace -98 -
+                // assuming it uses the same logic, any
+                // special workspace is a negative number
                 text("@Workspace: Special Workspace")
             } else {
                 text(format!("@Workspace: {}", workspace_id))
@@ -213,6 +227,7 @@ fn view(state: &AppState) -> Element<'_, Message> {
                 color: Some(status_col),
             });
 
+            // brings all together
             let item_content: iced::widget::Row<'_, _, _, _> =
                 row!(title_part, workspace_part, status_part).spacing(state.config.layout.spacing);
 
@@ -258,6 +273,10 @@ fn view(state: &AppState) -> Element<'_, Message> {
         .into()
 }
 
+/// Little function i added so only **one** instance of whereami can be launched
+/// creates a pid file that is locked until the application has stopped running
+/// the file contains the PID so if you really wanna kill it, you have the PID
+/// NOTE: this will **ONLY** be output in the terminal
 fn acquire_lock() -> fd_lock::RwLockWriteGuard<'static, std::fs::File> {
     let pid_loc = "/tmp/whereami.pid";
     let file = fs::OpenOptions::new()
@@ -266,6 +285,7 @@ fn acquire_lock() -> fd_lock::RwLockWriteGuard<'static, std::fs::File> {
         .open(pid_loc)
         .expect("Failed to open lock file");
 
+    // this is the main lock
     let lock = Box::leak(Box::new(RwLock::new(file)));
 
     match lock.try_write() {
@@ -299,8 +319,8 @@ fn main() -> iced::Result {
         .theme(move |_| theme.clone())
         .window(iced::window::Settings {
             position: iced::window::Position::Centered,
-            decorations: config.window.decorations,
-            transparent: config.window.transparent,
+            decorations: config.window.decorations, //these may not be needed
+            transparent: config.window.transparent, // this too
             size: iced::Size::new(config.window.width, config.window.height),
             ..Default::default()
         })

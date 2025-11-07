@@ -5,6 +5,8 @@ use std::{
     io::{self, Write},
 };
 
+/// Collects the toml file into an easy class.
+/// Its contents are quite self-explanitory
 #[derive(Deserialize)]
 pub struct Config {
     pub theme: Option<String>,
@@ -23,6 +25,7 @@ pub struct Window {
     pub decorations: bool,
 }
 
+/// NOTE: Selected text *may* not be used... keeping it in because it could be useful
 #[derive(Deserialize)]
 pub struct Colors {
     pub background: String,
@@ -53,6 +56,7 @@ pub struct Layout {
     pub border_radius: f32,
 }
 
+/// Still need to implement all of this...
 #[derive(Deserialize)]
 pub struct Behavior {
     pub wrap_navigation: bool,
@@ -60,6 +64,7 @@ pub struct Behavior {
 }
 
 impl Default for Config {
+    /// this defaults to gruvbox if no config file is found
     fn default() -> Self {
         Config {
             theme: None,
@@ -110,6 +115,7 @@ impl Config {
             Ok(Config::default())
         }
     }
+    /// the constructor except you are writing it into ~/.config/whereami/config.toml
     pub fn create_config() -> io::Result<()> {
         let home = std::env::var("HOME").expect("HOME not set");
 
@@ -160,6 +166,8 @@ impl Config {
         Ok(())
     }
 
+    /// if the theme line is uncommented it will default to that, otherwise it will create own
+    /// theme
     pub fn get_theme(&self) -> Theme {
         match self.theme.as_deref() {
             Some("GruvboxDark") => Theme::GruvboxDark,
@@ -184,6 +192,7 @@ impl Config {
             _ => self.to_theme(), // fallback to custom colors
         }
     }
+    /// parses Color struct into actual machine readable code
     pub fn to_theme(&self) -> Theme {
         let palette = Palette {
             background: parse_color(&self.colors.background),
