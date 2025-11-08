@@ -333,6 +333,10 @@ fn main() -> iced::Result {
             decorations: config.window.decorations, //these may not be needed
             transparent: config.window.transparent, // this too
             size: iced::Size::new(config.window.width, config.window.height),
+            platform_specific: iced::window::settings::PlatformSpecific {
+                application_id: "whereami".to_string(),
+                override_redirect: false,
+            },
             ..Default::default()
         })
         .subscription(subscription)
