@@ -52,6 +52,7 @@ pub struct Font {
 #[derive(Deserialize)]
 pub struct Layout {
     pub padding: f32,
+    pub margin: f32,
     pub spacing: f32,
     pub border_radius: f32,
 }
@@ -89,6 +90,7 @@ impl Default for Config {
             font: Font { size: 14.0 },
             layout: Layout {
                 padding: 10.0,
+                margin: 10.0,
                 spacing: 5.0,
                 border_radius: 4.0,
             },
@@ -152,6 +154,7 @@ impl Config {
 
             [layout]
             padding = 10
+            margin = 10
             spacing = 5
             border_radius = 4
 

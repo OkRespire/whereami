@@ -40,9 +40,12 @@ cargo install --path .
 bind = SUPER, D, exec, whereami
 
 # for window rules
+
+```
 windowrulev2 = float, title:(whereami)
 windowrulev2 = center, title:(whereami)
-```
+windowrulev2 = pin, title:(whereami) # this is so if you change workspaces it follows you
+``````
 
 - Arrow keys up/down = navigate (or use the mouse!)
 - Escape = exit

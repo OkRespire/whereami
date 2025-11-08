@@ -54,7 +54,6 @@ impl Default for AppState {
         AppState {
             clients: hyprctl::get_clients(),
             selected_idx: 0,
-            // hovered_idx: 0,
             scroll_id: scrollable::Id::new("item_scroll"),
             config: config,
         }
@@ -169,7 +168,6 @@ fn update(state: &mut AppState, msg: Message) -> Task<Message> {
             })
         }
         Message::HoverWindow(idx) => {
-            // state.hovered_idx = idx;
             state.selected_idx = idx;
             Task::none()
         }
@@ -186,7 +184,6 @@ fn view(state: &AppState) -> Element<'_, Message> {
             let is_selected = idx == state.selected_idx;
             let title = client.title.as_deref().unwrap_or("No title");
             let workspace_id = client.workspace.as_ref().map(|w| w.id).unwrap_or(0);
-            // let is_hovered = state.hovered_idx == idx;
             let status_col = match client.fullscreen {
                 1 => parse_color(&state.config.colors.status.fullscreen),
                 2 => parse_color(&state.config.colors.status.maximized),
@@ -233,6 +230,7 @@ fn view(state: &AppState) -> Element<'_, Message> {
 
             let styled = if is_selected {
                 container(item_content)
+                    .width(Length::Fill)
                     .style(|theme: &Theme| container::Style {
                         // Using Iced's built-in palette for primary/background
                         background: Some(theme.palette().primary.into()),
@@ -243,9 +241,20 @@ fn view(state: &AppState) -> Element<'_, Message> {
                         },
                         ..Default::default()
                     })
+                    // Honestly looks better like this. Tried making the edges wrap around the text but i couldn't
+                    // figure it out so this is the best way to make it look "pretty"
+                    // So example:
+                    // **When it is not selected:**
+                    //    item blah blah blah
+                    // **When it is selected:**
+                    // -----------------------
+                    // | item blah blah blah |
+                    // -----------------------
+                    // Not the greatest, but it looks nice.
                     .padding(state.config.layout.padding)
             } else {
                 container(item_content)
+                    .width(Length::Fill)
                     .style(|theme: &Theme| container::Style {
                         background: Some(Color::TRANSPARENT.into()),
                         text_color: Some(theme.palette().text.into()),
@@ -255,8 +264,9 @@ fn view(state: &AppState) -> Element<'_, Message> {
                         },
                         ..Default::default()
                     })
-                    .padding(state.config.layout.padding)
-            };
+                    .padding([state.config.layout.padding, state.config.layout.margin])
+            }
+            .width(Length::Shrink);
 
             let clickable = mouse_area(styled)
                 .on_press(Message::SelectAndFocus(idx))
@@ -268,7 +278,8 @@ fn view(state: &AppState) -> Element<'_, Message> {
         })
         .collect();
 
-    Scrollable::new(column(items).width(Length::Fill))
+    Scrollable::new(column(items))
+        .width(Length::Fill)
         .id(state.scroll_id.clone())
         .into()
 }
