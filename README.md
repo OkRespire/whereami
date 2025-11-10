@@ -41,11 +41,10 @@ bind = SUPER, D, exec, whereami
 
 # for window rules
 
-```
 windowrulev2 = float, class:(whereami)
 windowrulev2 = center, class:(whereami)
 windowrulev2 = pin, class:(whereami) # this is so if you change workspaces it follows you
-``````
+```
 
 - Arrow keys up/down = navigate (or use the mouse!)
 - Escape = exit (if you are writing on the search bar, it will be two clicks to escape)
