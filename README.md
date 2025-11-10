@@ -48,9 +48,9 @@ windowrulev2 = pin, class:(whereami) # this is so if you change workspaces it fo
 ``````
 
 - Arrow keys up/down = navigate (or use the mouse!)
-- Escape = exit
+- Escape = exit (if you are writing on the search bar, it will be two clicks to escape)
 - Enter/Left click = focus selected window
-- DEL/Right click = close selected window
+- DEL/Right click = close selected window (unfortunately DEL does not work when typing, so press ESC first then press DEL)
 
 ## Configuration
 - found in $HOME/.config/whereami/config.toml (auto-generated on first run)
