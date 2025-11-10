@@ -79,7 +79,7 @@ fn subscription(state: &AppState) -> iced::Subscription<Message> {
     }
     // how often the process list is refreshed
     iced::Subscription::batch(vec![
-        iced::time::every(std::time::Duration::from_secs(
+        iced::time::every(std::time::Duration::from_millis(
             state.config.behavior.refresh_interval,
         ))
         .map(|_| Message::LoadClients),

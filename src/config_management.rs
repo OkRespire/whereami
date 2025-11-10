@@ -96,7 +96,7 @@ impl Default for Config {
             },
             behavior: Behavior {
                 wrap_navigation: true,
-                refresh_interval: 1,
+                refresh_interval: 10,
             },
         }
     }
@@ -160,7 +160,7 @@ impl Config {
 
             [behavior]
             wrap_navigation = true
-            refresh_interval = 1
+            refresh_interval = 10 # in milliseconds
             ";
 
         file.write_all(config_content)?;
