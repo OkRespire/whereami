@@ -1,3 +1,4 @@
+/// All the information needed from hyprctl clients -j
 #[derive(serde::Deserialize, Debug, Clone)]
 pub struct Client {
     pub address: String,

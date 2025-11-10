@@ -1,21 +1,28 @@
 /*
+use iced::widget::shader::wgpu::core::identity::Input;
  * All the commented out print statements are for debugging purporses
  * */
 
 mod config_management;
 mod hyprctl;
 mod models;
+mod search;
 use std::os::unix::fs::FileExt;
+use std::sync::LazyLock;
 use std::{fs, process};
 
 use fd_lock::{self, RwLock};
 use iced::keyboard::{self, Key};
 use iced::widget::scrollable::AbsoluteOffset;
-use iced::widget::{Scrollable, column, container, mouse_area, row, scrollable, text};
+use iced::widget::text_input::focus;
+use iced::widget::{Scrollable, column, container, mouse_area, row, scrollable, text, text_input};
 use iced::{Border, Color, Element, Length, Task, Theme};
 use models::Client;
 
 use crate::config_management::parse_color;
+
+static TEXT_INPUT_ID: LazyLock<iced::widget::text_input::Id> =
+    LazyLock::new(|| iced::widget::text_input::Id::new("search_bar".to_string()));
 
 /// Messages for allowing the application to understand what updates it has to do
 #[derive(Debug, Clone)]
@@ -29,6 +36,8 @@ pub enum Message {
     SelectAndFocus(usize),
     SelectAndClose(usize),
     HoverWindow(usize),
+    UpdateInput(String),
+    FocusSearch,
     DoNothing,
 }
 
@@ -37,9 +46,12 @@ pub enum Message {
 /// put it here!
 pub struct AppState {
     clients: Vec<Client>,
+    clients_to_display: Vec<(Client, String)>,
     selected_idx: usize,
     scroll_id: scrollable::Id,
     config: config_management::Config,
+    query: String,
+    is_query: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -53,9 +65,12 @@ impl Default for AppState {
         let config = config_management::Config::new().expect("Failed to load config");
         AppState {
             clients: hyprctl::get_clients(),
+            clients_to_display: Vec::new(),
             selected_idx: 0,
             scroll_id: scrollable::Id::new("item_scroll"),
             config: config,
+            query: "".to_string(),
+            is_query: false,
         }
     }
 }
@@ -74,6 +89,7 @@ fn subscription(state: &AppState) -> iced::Subscription<Message> {
             Key::Named(iced::keyboard::key::Named::Enter) => Some(Message::ClientSelected),
             Key::Named(iced::keyboard::key::Named::Escape) => Some(Message::Quit),
             Key::Named(iced::keyboard::key::Named::Delete) => Some(Message::CloseWindow),
+            Key::Character(",") => Some(Message::FocusSearch),
             _ => Some(Message::DoNothing),
         }
     }
@@ -94,12 +110,13 @@ fn update(state: &mut AppState, msg: Message) -> Task<Message> {
         }
         Message::ClientsLoaded(clients) => {
             state.clients = clients;
+            search::filter_search(state);
             Task::none()
         }
         Message::Quit => process::exit(0),
         Message::ClientSelected => {
-            let client_idx = state.selected_idx;
-            let workspace_num = state.clients[client_idx]
+            let (selected_client, _) = &state.clients_to_display[state.selected_idx];
+            let workspace_num = selected_client
                 .workspace
                 .as_ref()
                 .map(|w| w.id)
@@ -114,12 +131,12 @@ fn update(state: &mut AppState, msg: Message) -> Task<Message> {
             let item_height = state.config.layout.padding + state.config.font.size;
             if dir.eq(&Direction::Up) {
                 if state.selected_idx == 0 {
-                    state.selected_idx = state.clients.len() - 1;
+                    state.selected_idx = state.clients_to_display.len() - 1;
                 } else {
                     state.selected_idx -= 1;
                 }
             } else {
-                if state.selected_idx == state.clients.len() - 1 {
+                if state.selected_idx == state.clients_to_display.len() - 1 {
                     state.selected_idx = 0;
                 } else {
                     state.selected_idx += 1;
@@ -141,7 +158,8 @@ fn update(state: &mut AppState, msg: Message) -> Task<Message> {
             )
         }
         Message::CloseWindow => {
-            let address = &state.clients[state.selected_idx].address;
+            let (selected_client, _) = &state.clients_to_display[state.selected_idx];
+            let address = &selected_client.address;
             // println!("{}\n{:?}", address, state.clients[state.selected_idx].title);
             Task::perform(hyprctl::close_window(address.to_string()), |_| {
                 Message::LoadClients
@@ -149,7 +167,8 @@ fn update(state: &mut AppState, msg: Message) -> Task<Message> {
         }
         Message::SelectAndFocus(idx) => {
             state.selected_idx = idx;
-            let workspace_num = state.clients[idx]
+            let (selected_client, _) = &state.clients_to_display[state.selected_idx];
+            let workspace_num = selected_client
                 .workspace
                 .as_ref()
                 .map(|w| w.id)
@@ -161,7 +180,8 @@ fn update(state: &mut AppState, msg: Message) -> Task<Message> {
         }
         Message::SelectAndClose(idx) => {
             state.selected_idx = idx;
-            let address = &state.clients[state.selected_idx].address;
+            let (selected_client, _) = &state.clients_to_display[state.selected_idx];
+            let address = &selected_client.address;
             // println!("{}\n{:?}", address, state.clients[state.selected_idx].title);
             Task::perform(hyprctl::close_window(address.to_string()), |_| {
                 Message::LoadClients
@@ -171,18 +191,26 @@ fn update(state: &mut AppState, msg: Message) -> Task<Message> {
             state.selected_idx = idx;
             Task::none()
         }
+        Message::UpdateInput(content) => {
+            state.query = content;
+            state.selected_idx = 0;
+            // when input is empty it is false, so you can revert to not searching
+            state.is_query = !state.query.is_empty();
+            Task::none()
+        }
+        Message::FocusSearch => focus(TEXT_INPUT_ID.clone()),
         Message::DoNothing => Task::none(),
     }
 }
 
 fn view(state: &AppState) -> Element<'_, Message> {
     let items: Vec<_> = state
-        .clients
+        .clients_to_display
         .iter()
         .enumerate()
-        .filter_map(|(idx, client)| {
+        .filter_map(|(idx, (client, name))| {
             let is_selected = idx == state.selected_idx;
-            let title = client.title.as_deref().unwrap_or("No title");
+            let title = name;
             let workspace_id = client.workspace.as_ref().map(|w| w.id).unwrap_or(0);
             let status_col = match client.fullscreen {
                 1 => parse_color(&state.config.colors.status.fullscreen),
@@ -277,10 +305,27 @@ fn view(state: &AppState) -> Element<'_, Message> {
             Some(Element::from(clickable))
         })
         .collect();
+    let search_bar_widget = Element::from(
+        text_input("Search", &state.query)
+            .id(TEXT_INPUT_ID.clone())
+            .on_input(Message::UpdateInput)
+            .on_submit(Message::ClientSelected)
+            .padding(state.config.layout.padding)
+            .size(state.config.font.size),
+    );
 
-    Scrollable::new(column(items))
+    let scrollable_list: Element<'_, Message> = iced::widget::Scrollable::new(
+        column(items).spacing(state.config.layout.spacing), // Put all client elements in a column
+    )
+    .width(Length::Fill)
+    .height(Length::Fill) // The scrollable part should fill available vertical space
+    .id(state.scroll_id.clone())
+    .into();
+
+    column![search_bar_widget, scrollable_list,]
+        .spacing(state.config.layout.spacing)
         .width(Length::Fill)
-        .id(state.scroll_id.clone())
+        .height(Length::Fill)
         .into()
 }
 

@@ -31,9 +31,18 @@
           ];
 
           buildInputs = with pkgs; [
+            expat
+            fontconfig
+            freetype
+            freetype.dev
             libGL
-            libxkbcommon
+            pkg-config
+            xorg.libX11
+            xorg.libXcursor
+            xorg.libXi
+            xorg.libXrandr
             wayland
+            libxkbcommon
           ];
 
           postFixup = ''
@@ -54,7 +63,18 @@
             cargo
             rustc
             rust-analyzer
+            expat
+            fontconfig
+            freetype
+            freetype.dev
+            libGL
             pkg-config
+            xorg.libX11
+            xorg.libXcursor
+            xorg.libXi
+            xorg.libXrandr
+            wayland
+            libxkbcommon
           ];
 
           LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [

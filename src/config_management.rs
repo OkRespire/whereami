@@ -70,8 +70,8 @@ impl Default for Config {
         Config {
             theme: None,
             window: Window {
-                width: 600.0,
-                height: 400.0,
+                width: 900.0,
+                height: 500.0,
                 transparent: true,
                 decorations: false,
             },
@@ -132,8 +132,8 @@ impl Config {
             # theme = \"GruvboxDark\"
 
             [window]
-            width = 600
-            height = 400
+            width = 900
+            height = 500
             transparent = true
             decorations = false
 
