@@ -16,13 +16,17 @@
 **On NixOS**
 
 ```bash
-$ git clone https://github.com/OkRespire/whereami.git
-$ cd whereami
-$ nix profile install
+# in flake.nix
 
-```
-**This will later be written in flake format**
+    whereami = {
+      url = "github:okrespire/whereami";
+    };
 
+# in home manager/normal nix package
+    packages = with pkgs; [
+     #... other packages
+     inputs.whereami.packages.${system}.whereami
+    ];
 
 
 **Every other system (Linux)**
