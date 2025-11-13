@@ -28,7 +28,7 @@
      inputs.whereami.packages.${system}.whereami
     ];
 
-
+```
 **Every other system (Linux)**
 
 **Other systems**
