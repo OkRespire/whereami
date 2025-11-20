@@ -2,6 +2,10 @@
 name = "whereami"
 version = "0.1.0"
 edition = "2024"
+authors = ["Respire"]
+description = "Window Switcher for Hyprland"
+license = "MIT"
+repository = "https://github.com/okrespire/whereami"
 
 [dependencies]
 fd-lock = "4.0.4"
