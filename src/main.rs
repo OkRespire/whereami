@@ -308,6 +308,18 @@ fn view(state: &AppState) -> Element<'_, Message> {
     let search_bar_widget = Element::from(
         text_input("Search", &state.query)
             .id(TEXT_INPUT_ID.clone())
+            .style(|_, _| text_input::Style {
+                background: parse_color(&state.config.colors.background).into(),
+                border: Border {
+                    color: Color::WHITE,
+                    radius: state.config.layout.border_radius.into(),
+                    ..Default::default()
+                },
+                selection: parse_color(&state.config.colors.selected_text),
+                icon: parse_color(&state.config.colors.selected_background),
+                placeholder: parse_color(&state.config.colors.text),
+                value: parse_color(&state.config.colors.selected_text),
+            })
             .on_input(Message::UpdateInput)
             .on_submit(Message::ClientSelected)
             .padding(state.config.layout.padding)
