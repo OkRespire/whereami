@@ -19,7 +19,7 @@ use iced::widget::{Scrollable, column, container, mouse_area, row, scrollable, t
 use iced::{Border, Color, Element, Length, Task, Theme};
 use models::Client;
 
-use crate::config_management::parse_color;
+use crate::config_management::parse_colour;
 
 static TEXT_INPUT_ID: LazyLock<iced::widget::text_input::Id> =
     LazyLock::new(|| iced::widget::text_input::Id::new("search_bar".to_string()));
@@ -213,13 +213,13 @@ fn view(state: &AppState) -> Element<'_, Message> {
             let title = name;
             let workspace_id = client.workspace.as_ref().map(|w| w.id).unwrap_or(0);
             let status_col = match client.fullscreen {
-                1 => parse_color(&state.config.colors.status.fullscreen),
-                2 => parse_color(&state.config.colors.status.maximized),
+                1 => parse_colour(&state.config.colours.status.fullscreen),
+                2 => parse_colour(&state.config.colours.status.maximized),
                 _ => {
                     if client.floating {
-                        parse_color(&state.config.colors.status.floating)
+                        parse_colour(&state.config.colours.status.floating)
                     } else {
-                        parse_color(&state.config.colors.status.tiled)
+                        parse_colour(&state.config.colours.status.tiled)
                     }
                 }
             };
@@ -309,16 +309,16 @@ fn view(state: &AppState) -> Element<'_, Message> {
         text_input("Search", &state.query)
             .id(TEXT_INPUT_ID.clone())
             .style(|_, _| text_input::Style {
-                background: parse_color(&state.config.colors.background).into(),
+                background: parse_colour(&state.config.colours.search_background).into(),
                 border: Border {
-                    color: Color::WHITE,
+                    color: parse_colour(&state.config.colours.search_border_col),
                     radius: state.config.layout.border_radius.into(),
-                    ..Default::default()
+                    width: 1.0,
                 },
-                selection: parse_color(&state.config.colors.selected_text),
-                icon: parse_color(&state.config.colors.selected_background),
-                placeholder: parse_color(&state.config.colors.text),
-                value: parse_color(&state.config.colors.selected_text),
+                selection: parse_colour(&state.config.colours.selected_text),
+                icon: parse_colour(&state.config.colours.selected_background),
+                placeholder: parse_colour(&state.config.colours.text),
+                value: parse_colour(&state.config.colours.selected_text),
             })
             .on_input(Message::UpdateInput)
             .on_submit(Message::ClientSelected)

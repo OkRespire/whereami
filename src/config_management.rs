@@ -11,7 +11,7 @@ use std::{
 pub struct Config {
     pub theme: Option<String>,
     pub window: Window,
-    pub colors: Colors,
+    pub colours: Colours,
     pub font: Font,
     pub layout: Layout,
     pub behavior: Behavior,
@@ -27,16 +27,18 @@ pub struct Window {
 
 /// NOTE: Selected text *may* not be used... keeping it in because it could be useful
 #[derive(Deserialize)]
-pub struct Colors {
+pub struct Colours {
     pub background: String,
     pub text: String,
     pub selected_background: String,
     pub selected_text: String,
-    pub status: ColorsStatus,
+    pub search_background: String,
+    pub search_border_col: String,
+    pub status: ColoursStatus,
 }
 
 #[derive(Deserialize)]
-pub struct ColorsStatus {
+pub struct ColoursStatus {
     pub fullscreen: String,
     pub maximized: String,
     pub floating: String,
@@ -75,12 +77,14 @@ impl Default for Config {
                 transparent: true,
                 decorations: false,
             },
-            colors: Colors {
+            colours: Colours {
                 background: "#282828".to_string(),
                 text: "#ebdbb2".to_string(),
                 selected_background: "#458588".to_string(),
                 selected_text: "#282828".to_string(),
-                status: ColorsStatus {
+                search_background: "#282828".to_string(),
+                search_border_col: "#808080".to_string(),
+                status: ColoursStatus {
                     fullscreen: "#fb4934".to_string(),
                     maximized: "#fabd2f".to_string(),
                     floating: "#b8bb26".to_string(),
@@ -137,13 +141,15 @@ impl Config {
             transparent = true
             decorations = false
 
-            [colors]
+            [colours]
             background = \"#282828\"
             text = \"#ebdbb2\"
             selected_background = \"#458588\"
             selected_text = \"#282828\"
+            search_background = \"#282828\"
+            search_border_col = \"#808080\"
 
-            [colors.status]
+            [colours.status]
             fullscreen = \"#fb4934\"
             maximized = \"#fabd2f\"
             floating = \"#b8bb26\"
@@ -198,18 +204,18 @@ impl Config {
     /// parses Color struct into actual machine readable code
     pub fn to_theme(&self) -> Theme {
         let palette = Palette {
-            background: parse_color(&self.colors.background),
-            text: parse_color(&self.colors.text),
-            primary: parse_color(&self.colors.selected_background),
-            success: parse_color(&self.colors.background),
-            danger: parse_color(&self.colors.background),
+            background: parse_colour(&self.colours.background),
+            text: parse_colour(&self.colours.text),
+            primary: parse_colour(&self.colours.selected_background),
+            success: parse_colour(&self.colours.background),
+            danger: parse_colour(&self.colours.background),
         };
 
         Theme::custom("user-made palette".to_string(), palette)
     }
 }
 
-pub fn parse_color(val: &String) -> Color {
+pub fn parse_colour(val: &String) -> Color {
     let hex = val.trim_start_matches("#");
     let r = u8::from_str_radix(&hex[0..2], 16).unwrap_or(0);
     let g = u8::from_str_radix(&hex[2..4], 16).unwrap_or(0);
