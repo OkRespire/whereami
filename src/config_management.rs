@@ -48,7 +48,6 @@ pub struct ColoursStatus {
 #[derive(Deserialize)]
 pub struct Font {
     pub size: f32,
-    // family: Option<String>,  // optional field
 }
 
 #[derive(Deserialize)]
@@ -62,7 +61,6 @@ pub struct Layout {
 /// Still need to implement all of this...
 #[derive(Deserialize)]
 pub struct Behavior {
-    pub wrap_navigation: bool,
     pub refresh_interval: u64,
 }
 
@@ -99,7 +97,6 @@ impl Default for Config {
                 border_radius: 4.0,
             },
             behavior: Behavior {
-                wrap_navigation: true,
                 refresh_interval: 10,
             },
         }
@@ -165,7 +162,6 @@ impl Config {
             border_radius = 4
 
             [behavior]
-            wrap_navigation = true
             refresh_interval = 10 # in milliseconds
             ";
 

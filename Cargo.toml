@@ -10,10 +10,8 @@ repository = "https://github.com/okrespire/whereami"
 [dependencies]
 fd-lock = "4.0.4"
 fuzzy-matcher = "0.3.7"
-iced = { version = "0.13.1", features = ["tokio", "debug"] }
+iced = { version = "0.13.1", features = ["debug", "tokio"] }
 iced_core = "0.13.2"
-rayon = "1.11.0"
 serde = "1.0.228"
 serde_json = "1.0.145"
-tokio = { version = "1.47.1", features = ["full"] }
 toml = "0.9.8"
