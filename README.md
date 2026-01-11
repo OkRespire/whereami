@@ -44,6 +44,7 @@ cargo install --path .
 bind = SUPER, D, exec, whereami
 
 # for window rules
+# NOTE: Currently this does not work because of new window rules... for some reason the width and height also have to be hard coded into it. I will probably migrate all this code to iced-layershell
 
 windowrulev2 = float, class:(whereami)
 windowrulev2 = center, class:(whereami)
