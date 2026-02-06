@@ -15,7 +15,7 @@
 
 **On NixOS**
 
-```bash
+```nix
 # in flake.nix
 
     whereami = {
