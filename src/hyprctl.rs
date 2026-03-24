@@ -2,7 +2,6 @@
  * All the commented out print statements are for debugging purporses
  * */
 
-use std::process::Command;
 
 // use crate::models::Client;
 
@@ -10,7 +9,8 @@ use hyprland::{
     self,
     data::Client,
     dispatch::DispatchType,
-    shared::{Address, HyprData, HyprDataVec, HyprError},
+    error::HyprError,
+    shared::{Address, HyprData, HyprDataVec},
 };
 
 /// Contacts hyprctl to get all clients and is processed by serde

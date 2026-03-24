@@ -55,17 +55,18 @@ impl Compositor for HyprlandCompositor {
         let processes = clients
             .iter()
             .map(|cl|{
-            let fs_mode = match cl.fullscreen_mode {
-                1 => FullscreenStatus::Fullscreen,
-                2 => FullscreenStatus::Maximised,
+            let fs_mode = match cl.fullscreen {
+                hyprland::data::FullscreenMode::Fullscreen => FullscreenStatus::Fullscreen,
+                hyprland::data::FullscreenMode::Maximized => FullscreenStatus::Maximised,
                 _ => FullscreenStatus::None,
             };
+            let workspace_id = cl.workspace.id.unsigned_abs() as u64;
             Process {
                 pid: cl.pid,
                 title: cl.title.clone(),
                 class: cl.class.clone(),
                 window_id: None,
-                workspace: cl.workspace.id as u64,
+                workspace: workspace_id,
                 fullscreen: fs_mode,
                 floating: cl.floating.clone(),
             }

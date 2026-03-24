@@ -1,6 +1,6 @@
 [package]
 name = "whereami"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 authors = ["Respire"]
 description = "Window Switcher for Hyprland"
@@ -12,7 +12,7 @@ anyhow = "1.0.102"
 async-trait = "0.1.89"
 fd-lock = "4.0.4"
 fuzzy-matcher = "0.3.7"
-hyprland = "0.3.13"
+hyprland = "0.4.0-alpha.2"
 iced = { version = "0.13.1", features = ["debug", "tokio"] }
 iced_core = "0.13.2"
 niri-ipc = "25.11.0"

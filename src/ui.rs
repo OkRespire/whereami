@@ -237,11 +237,14 @@ impl AppState {
                 // implementation for ALL of these colours will be added sometime later.
                 // Currently only supports status colours
                 let title_part: iced_core::widget::Text<'_, _, _> = text(title);
-                let workspace_part = if workspace_id == 0 {
+                let workspace_part = if workspace_id  > 50 {
                     // atleast for me, my special workspace (in a
                     // scratch pad) is on workspace -98 -
                     // assuming it uses the same logic, any
                     // special workspace is a negative number
+                    // Since this is now converted into an unsigned
+                    // integer, this will now be above 50
+                    // Surelyt no one has mroe than 50 worskpaces right
                     text("@Workspace: Special Workspace")
                 } else {
                     text(format!("@Workspace: {}", workspace_id))
