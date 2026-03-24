@@ -68,11 +68,9 @@ windowrulev2 = pin, class:(whereami) # this is so if you change workspaces it fo
 
 
 # TODO
-[x] Added Niri Functionality
-
-[ ] Change to iced layershell
-
-[ ] Remove unwraps
+- [x] Added Niri Functionality
+- [ ] Change to iced layershell
+- [ ] Remove unwraps
 
 
 
