@@ -4,7 +4,7 @@
 
 mod config_management;
 mod hyprctl;
-mod models;
+mod compositor;
 mod search;
 mod ui;
 use std::os::unix::fs::FileExt;
@@ -12,6 +12,7 @@ use std::{fs, process};
 
 use crate::ui::AppState;
 use fd_lock::RwLock;
+
 
 /// Little function i added so only **one** instance of whereami can be launched
 /// creates a pid file that is locked until the application has stopped running

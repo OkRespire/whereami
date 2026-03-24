@@ -1,5 +1,5 @@
 use std::process;
-use std::sync::LazyLock;
+use std::sync::{Arc, LazyLock};
 
 use iced::keyboard::{self, Key};
 use iced::widget::scrollable::AbsoluteOffset;
@@ -8,18 +8,30 @@ use iced::widget::{column, container, mouse_area, row, scrollable, text, text_in
 use iced::{Border, Color, Element, Length, Task, Theme};
 
 use crate::config_management::{Config, parse_colour};
-use crate::hyprctl::{close_window, focus_window, get_clients};
-use crate::models::Client;
+use crate::compositor::{Compositor, FullscreenStatus, HyprlandCompositor, NiriCompositor, Process};
 use crate::search::filter_search;
 
 static TEXT_INPUT_ID: LazyLock<iced::widget::text_input::Id> =
     LazyLock::new(|| iced::widget::text_input::Id::new("search_bar".to_string()));
 
+
+
+/// Gets the current compositor used
+/// Currently only supports Hyprland and Niri
+fn get_compositor() -> Arc<dyn Compositor + Send + Sync> {
+    if std::env::var("NIRI_SOCKET").is_ok() {
+        return Arc::new(NiriCompositor) as Arc<dyn Compositor + Send + Sync>;
+    } else if std::env::var("HYPRLAND_INSTANCE_SIGNATURE").is_ok() {
+        return Arc::new(HyprlandCompositor) as Arc<dyn Compositor + Send + Sync>;
+    }
+    panic!("No supported compositor found");
+}
+
 /// Messages for allowing the application to understand what updates it has to do
 #[derive(Debug, Clone)]
 pub enum Message {
     LoadClients,
-    ClientsLoaded(Vec<Client>),
+    ClientsLoaded(Vec<Process>),
     Quit,
     ClientSelected,
     Navigate(Direction),
@@ -36,13 +48,14 @@ pub enum Message {
 /// if you want to add something else you need to store,
 /// put it here!
 pub struct AppState {
-    pub clients: Vec<Client>,
-    pub clients_to_display: Vec<(Client, String)>,
+    pub clients: Vec<Process>,
+    pub clients_to_display: Vec<(Process, String)>,
     pub selected_idx: usize,
     pub scroll_id: scrollable::Id,
     pub config: Config,
     pub query: String,
     pub is_query: bool,
+    pub compositor: Arc<dyn Compositor + Send + Sync>
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -54,14 +67,16 @@ pub enum Direction {
 impl Default for AppState {
     fn default() -> Self {
         let config = Config::new().expect("Failed to load config");
+        let compositor = get_compositor();
         AppState {
-            clients: get_clients(),
+            clients: Result::expect(compositor.get_windows(), "Failed"),
             clients_to_display: Vec::new(),
             selected_idx: 0,
             scroll_id: scrollable::Id::new("item_scroll"),
             config: config,
             query: "".to_string(),
             is_query: false,
+            compositor: compositor,
         }
     }
 }
@@ -97,7 +112,10 @@ impl AppState {
 
     pub fn update(&mut self, msg: Message) -> Task<Message> {
         match msg {
-            Message::LoadClients => Task::perform(async { get_clients() }, Message::ClientsLoaded),
+            Message::LoadClients => {
+                let compositor = Arc::clone(&self.compositor);
+                Task::perform(async move { Result::expect(compositor.get_windows(),"err") }, Message::ClientsLoaded)
+            },
             Message::ClientsLoaded(clients) => {
                 self.clients = clients;
                 filter_search(self);
@@ -106,13 +124,10 @@ impl AppState {
             Message::Quit => process::exit(0),
             Message::ClientSelected => {
                 let (selected_client, _) = &self.clients_to_display[self.selected_idx];
-                let workspace_num = selected_client
-                    .workspace
-                    .as_ref()
-                    .map(|w| w.id)
-                    .unwrap_or(0);
+                let compositor = Arc::clone(&self.compositor);
+                let cl = selected_client.clone();
                 // println!("{:?}", self.clients[client_idx].title);
-                Task::perform(async move { focus_window(workspace_num).await }, |_| {
+                Task::perform(async move { compositor.focus_window(cl).await }, |_| {
                     Message::Quit
                 })
             }
@@ -148,28 +163,27 @@ impl AppState {
             }
             Message::CloseWindow => {
                 let (selected_client, _) = &self.clients_to_display[self.selected_idx];
-                let address = &selected_client.address;
+                let cl = selected_client.clone();
+                let compositor = Arc::clone(&self.compositor);
                 // println!("{}\n{:?}", address, self.clients[self.selected_idx].title);
-                Task::perform(close_window(address.to_string()), |_| Message::LoadClients)
+                Task::perform(async move { compositor.close_window(cl).await}, |_| Message::LoadClients)
             }
             Message::SelectAndFocus(idx) => {
                 self.selected_idx = idx;
+                let compositor = Arc::clone(&self.compositor);
                 let (selected_client, _) = &self.clients_to_display[self.selected_idx];
-                let workspace_num = selected_client
-                    .workspace
-                    .as_ref()
-                    .map(|w| w.id)
-                    .unwrap_or(0);
-                Task::perform(async move { focus_window(workspace_num).await }, |_| {
+                let cl = selected_client.clone();
+                Task::perform(async move { compositor.focus_window(cl).await }, |_| {
                     Message::Quit
                 })
             }
             Message::SelectAndClose(idx) => {
                 self.selected_idx = idx;
+                let compositor = Arc::clone(&self.compositor);
                 let (selected_client, _) = &self.clients_to_display[self.selected_idx];
-                let address = &selected_client.address;
+                let cl = selected_client.clone();
                 // println!("{}\n{:?}", address, self.clients[self.selected_idx].title);
-                Task::perform(close_window(address.to_string()), |_| Message::LoadClients)
+                Task::perform(async move { compositor.close_window(cl).await}, |_| Message::LoadClients)
             }
             Message::HoverWindow(idx) => {
                 self.selected_idx = idx;
@@ -195,10 +209,10 @@ impl AppState {
             .filter_map(|(idx, (client, name))| {
                 let is_selected = idx == self.selected_idx;
                 let title = name;
-                let workspace_id = client.workspace.as_ref().map(|w| w.id).unwrap_or(0);
+                let workspace_id = client.workspace;
                 let status_col = match client.fullscreen {
-                    1 => parse_colour(&self.config.colours.status.fullscreen),
-                    2 => parse_colour(&self.config.colours.status.maximized),
+                    FullscreenStatus::Fullscreen => parse_colour(&self.config.colours.status.fullscreen),
+                    FullscreenStatus::Maximised => parse_colour(&self.config.colours.status.maximized),
                     _ => {
                         if client.floating {
                             parse_colour(&self.config.colours.status.floating)
@@ -208,9 +222,9 @@ impl AppState {
                     }
                 };
                 let status = match client.fullscreen {
-                    1 => "Fullscreen",
-                    2 => "Maximised",
-                    _ => {
+                    FullscreenStatus::Fullscreen => "Fullscreen",
+                    FullscreenStatus::Maximised => "Maximised",
+                    FullscreenStatus::None => {
                         if client.floating {
                             "Float"
                         } else {
@@ -223,7 +237,7 @@ impl AppState {
                 // implementation for ALL of these colours will be added sometime later.
                 // Currently only supports status colours
                 let title_part: iced_core::widget::Text<'_, _, _> = text(title);
-                let workspace_part = if workspace_id < 0 {
+                let workspace_part = if workspace_id == 0 {
                     // atleast for me, my special workspace (in a
                     // scratch pad) is on workspace -98 -
                     // assuming it uses the same logic, any

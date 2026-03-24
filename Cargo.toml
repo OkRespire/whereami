@@ -8,10 +8,15 @@ license = "MIT"
 repository = "https://github.com/okrespire/whereami"
 
 [dependencies]
+anyhow = "1.0.102"
+async-trait = "0.1.89"
 fd-lock = "4.0.4"
 fuzzy-matcher = "0.3.7"
+hyprland = "0.3.13"
 iced = { version = "0.13.1", features = ["debug", "tokio"] }
 iced_core = "0.13.2"
+niri-ipc = "25.11.0"
 serde = "1.0.228"
 serde_json = "1.0.145"
 toml = "0.9.8"
+winnow = "1.0.0"
