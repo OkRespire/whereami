@@ -8,8 +8,7 @@
 
 
 ## Requirements
-- Hyprland
-- Niri
+- Hyprland or Niri
 - Rust (for building)
 
 ## Install
@@ -36,14 +35,20 @@
 ```bash
 git clone https://github.com/OkRespire/whereami.git
 cd whereami
-cargo install
+cargo install --path .
 ```
 
 ## Usage
 - Launch with 'whereami' in the terminal, or bind in your Hyprland config
 ```
-bind = SUPER, D, exec, whereami
 
+// in niri config.kdl
+binds {
+    Mod+D { spawn "whereami"; }
+}
+
+// For hyprland
+bind = SUPER, D, exec, whereami
 # for window rules
 # NOTE: Currently this does not work because of new window rules... for some reason the width and height also have to be hard coded into it. I will probably migrate all this code to iced-layershell
 
@@ -64,7 +69,10 @@ windowrulev2 = pin, class:(whereami) # this is so if you change workspaces it fo
 
 # TODO
 [x] Added Niri Functionality
+
 [ ] Change to iced layershell
-[ ] Update README for Niri details
+
 [ ] Remove unwraps
-*I will try to release it on package managers, maybe*
+
+
+
