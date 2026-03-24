@@ -9,6 +9,7 @@
 
 ## Requirements
 - Hyprland
+- Niri
 - Rust (for building)
 
 ## Install
@@ -35,7 +36,7 @@
 ```bash
 git clone https://github.com/OkRespire/whereami.git
 cd whereami
-cargo install --path .
+cargo install
 ```
 
 ## Usage
@@ -60,4 +61,10 @@ windowrulev2 = pin, class:(whereami) # this is so if you change workspaces it fo
 - found in $HOME/.config/whereami/config.toml (auto-generated on first run)
 - basic customisation provided (for now, some are not implemented)
 
+
+# TODO
+[x] Added Niri Functionality
+[ ] Change to iced layershell
+[ ] Update README for Niri details
+[ ] Remove unwraps
 *I will try to release it on package managers, maybe*
