@@ -3,7 +3,7 @@ name = "whereami"
 version = "0.1.1"
 edition = "2024"
 authors = ["Respire"]
-description = "Window Switcher for Hyprland"
+description = "Window Switcher for Hyprland and Niri"
 license = "MIT"
 repository = "https://github.com/okrespire/whereami"
 
