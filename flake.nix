@@ -1,8 +1,13 @@
 {
-  description = "whereami: Hyprland process viewer";
+  description = "whereami: Hyprland and Niri process viewer";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    fenix = {
+      url = "github:nix-community/fenix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    crane.url = "github:ipetkov/crane";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
@@ -11,80 +16,74 @@
       self,
       nixpkgs,
       flake-utils,
+      fenix,
+      crane,
     }:
     flake-utils.lib.eachDefaultSystem (
       system:
       let
-        pkgs = nixpkgs.legacyPackages.${system};
-      in
-      {
-        packages.whereami = pkgs.rustPlatform.buildRustPackage {
+        pkgs = import nixpkgs { inherit system; };
+        toolchain = fenix.packages.${system}.stable.toolchain;
+        devToolchain = fenix.packages.${system}.combine [
+          fenix.packages.${system}.stable.toolchain
+          fenix.packages.${system}.stable.rust-src
+          fenix.packages.${system}.stable.rust-analyzer
+        ];
+        craneLib = (crane.mkLib pkgs).overrideToolchain toolchain;
+        runtimeLibs = with pkgs; [
+          expat
+          fontconfig
+          freetype
+          libGL
+          libX11
+          libXcursor
+          libXi
+          libXrandr
+          wayland
+          libxkbcommon
+        ];
+
+        cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
+        commonArgs = {
           pname = "whereami";
-          version = "0.1.1";
-
-          src = ./.;
-
-          cargoLock.lockFile = ./Cargo.lock;
+          version = cargoToml.package.version;
+          src = craneLib.cleanCargoSource (craneLib.path ./.);
+          strictDeps = true;
 
           nativeBuildInputs = with pkgs; [
             pkg-config
+            autoPatchelfHook
+            mold
+            clang
           ];
 
-          buildInputs = with pkgs; [
-            expat
-            fontconfig
-            freetype
-            freetype.dev
-            libGL
-            pkg-config
-            libX11
-            libXcursor
-            libXi
-            libXrandr
-            wayland
-            libxkbcommon
-          ];
+          buildInputs =
+            runtimeLibs
+            ++ (with pkgs; [
+              gcc.cc.lib
+              glibc
+            ]);
+          RUSTFLAGS = "-C link-arg=-fuse-ld=${pkgs.mold}/bin/mold";
+          CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER = "${pkgs.clang}/bin/clang";
 
-          postFixup = ''
-            patchelf --set-rpath "${
-              pkgs.lib.makeLibraryPath [
-                pkgs.libGL
-                pkgs.libxkbcommon
-                pkgs.wayland
-              ]
-            }" $out/bin/whereami
-          '';
         };
-
-        packages.default = self.packages.${system}.whereami;
+        cargoArtifacts = craneLib.buildDepsOnly commonArgs;
+        whereami = craneLib.buildPackage (
+          commonArgs
+          // {
+            inherit cargoArtifacts;
+          }
+        );
+      in
+      {
+        packages.whereami = whereami;
+        packages.default = whereami;
 
         devShells.default = pkgs.mkShell {
-          buildInputs = with pkgs; [
-            cargo
-            rustc
-            rust-analyzer
-            expat
-            fontconfig
-            freetype
-            freetype.dev
-            libGL
-            pkg-config
-            libX11
-            libXcursor
-            libXi
-            libXrandr
-            wayland
-            libxkbcommon
-          ];
-
-          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [
-            pkgs.libGL
-            pkgs.libxkbcommon
-            pkgs.wayland
-          ];
-
+          inputsFrom = [ whereami ];
+          nativeBuildInputs = [ devToolchain ];
+          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath runtimeLibs;
           RUST_LOG = "debug";
-          RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
         };
       }
     );

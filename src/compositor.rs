@@ -106,6 +106,11 @@ impl Compositor for NiriCompositor {
 
         };
         res.retain(|client| client.title != Some("whereami".to_string()));
+        let mut active_workspaces: Vec<u64> = res.iter()
+                .filter_map(|c| c.workspace_id)
+                .collect();
+        active_workspaces.sort_unstable();
+        active_workspaces.dedup();
         res.sort_by(|a,b| {
             a.workspace_id.cmp(&b.workspace_id)
         });
@@ -115,10 +120,19 @@ impl Compositor for NiriCompositor {
                 (0.0, 0.0) => FullscreenStatus::Fullscreen,
                 _ => FullscreenStatus::None,
             };
-            let ws_id = match c.workspace_id{
-                Some(ws_id) => ws_id,
-                None => 0
-            };
+            // Niri's workspace IDs increment infinitely (e.g., closing and opening
+            // workspaces might leave you with active IDs like 1, 3, and 6).
+            // To prevent the UI from displaying jumping numbers, we map these raw IDs
+            // to a sequential visual index.
+            //
+            // Example:
+            // 1. Collect unique active workspaces -> [1, 3, 6]
+            // 2. Find the raw ID's position in that list (1->0, 3->1, 6->2)
+            // 3. Add 1 so the UI displays them neatly as Workspaces 1, 2, and 3.
+            let ws_id = c.workspace_id
+                        .and_then(|id| active_workspaces.iter().position(|&x| x == id))
+                        .map(|pos| (pos + 1) as u64) // +1 because programmers count from 0, humans from 1
+                        .unwrap_or(0);
             let pid = c.pid?;
             Some(Process {
                 pid: pid,
