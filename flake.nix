@@ -69,10 +69,10 @@
             freetype.dev
             libGL
             pkg-config
-            xorg.libX11
-            xorg.libXcursor
-            xorg.libXi
-            xorg.libXrandr
+            libX11
+            libXcursor
+            libXi
+            libXrandr
             wayland
             libxkbcommon
           ];
