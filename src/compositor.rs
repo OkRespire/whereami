@@ -99,12 +99,16 @@ impl Compositor for NiriCompositor {
         let mut socket = Socket::connect().context("failed to connect to niri socket")?;
         let reply = socket.send(Request::Windows).context("Failed to send windows request")?;
 
-        let res = match reply {
+        let mut res = match reply {
             Ok(Response::Windows(win)) => win,
             Ok(_) => anyhow::bail!("unexpected response"),
             Err(e) => anyhow::bail!("niri returned error {e}")
 
         };
+        res.retain(|client| client.title != Some("whereami".to_string()));
+        res.sort_by(|a,b| {
+            a.workspace_id.cmp(&b.workspace_id)
+        });
 
         let processes = res.iter().filter_map(|c| {
             let fs_mode = match c.layout.window_offset_in_tile {
