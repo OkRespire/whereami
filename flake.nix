@@ -54,6 +54,7 @@
             pkg-config
             autoPatchelfHook
             mold
+            makeWrapper
             clang
           ];
 
@@ -71,6 +72,11 @@
         whereami = craneLib.buildPackage (
           commonArgs
           // {
+
+            postInstall = ''
+              wrapProgram $out/bin/whereami \
+              --prefix LD_LIBRARY_PATH : ${pkgs.lib.makeLibraryPath runtimeLibs}
+            '';
             inherit cargoArtifacts;
           }
         );
