@@ -4,7 +4,7 @@ use std::sync::{Arc, LazyLock};
 
 use iced::keyboard::{self, Key};
 use iced::widget::scrollable::AbsoluteOffset;
-use iced::widget::{column, container, mouse_area, operation, row, scrollable, text, text_input};
+use iced::widget::{column, container, mouse_area, operation, row, text, text_input};
 use iced::{Border, Color, Element, Length, Task, Theme, widget};
 
 use crate::compositor::{

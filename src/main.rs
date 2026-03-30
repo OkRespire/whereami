@@ -4,7 +4,6 @@
 
 mod compositor;
 mod config_management;
-mod hyprctl;
 mod search;
 mod ui;
 use std::os::unix::fs::FileExt;
