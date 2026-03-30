@@ -21,8 +21,6 @@ pub struct Config {
 pub struct Window {
     pub width: f32,
     pub height: f32,
-    pub transparent: bool,
-    pub decorations: bool,
 }
 
 /// NOTE: Selected text *may* not be used... keeping it in because it could be useful
@@ -35,6 +33,7 @@ pub struct Colours {
     pub search_background: String,
     pub search_border_col: String,
     pub status: ColoursStatus,
+    pub border_col: String,
 }
 
 #[derive(Deserialize)]
@@ -72,8 +71,6 @@ impl Default for Config {
             window: Window {
                 width: 900.0,
                 height: 500.0,
-                transparent: true,
-                decorations: false,
             },
             colours: Colours {
                 background: "#282828".to_string(),
@@ -88,6 +85,7 @@ impl Default for Config {
                     floating: "#b8bb26".to_string(),
                     tiled: "#83a598".to_string(),
                 },
+                border_col: "#ebdbb2".to_string(),
             },
             font: Font { size: 14.0 },
             layout: Layout {
@@ -135,8 +133,6 @@ impl Config {
             [window]
             width = 900
             height = 500
-            transparent = true
-            decorations = false
 
             [colours]
             background = \"#282828\"
@@ -145,6 +141,7 @@ impl Config {
             selected_text = \"#282828\"
             search_background = \"#282828\"
             search_border_col = \"#808080\"
+            border_col = \"#ebdbb2\"
 
             [colours.status]
             fullscreen = \"#fb4934\"
@@ -205,6 +202,7 @@ impl Config {
             primary: parse_colour(&self.colours.selected_background),
             success: parse_colour(&self.colours.background),
             danger: parse_colour(&self.colours.background),
+            warning: parse_colour(&self.colours.background),
         };
 
         Theme::custom("user-made palette".to_string(), palette)

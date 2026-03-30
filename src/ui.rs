@@ -1,20 +1,19 @@
+use iced_layershell::to_layer_message;
 use std::process;
 use std::sync::{Arc, LazyLock};
 
 use iced::keyboard::{self, Key};
 use iced::widget::scrollable::AbsoluteOffset;
-use iced::widget::text_input::focus;
-use iced::widget::{column, container, mouse_area, row, scrollable, text, text_input};
-use iced::{Border, Color, Element, Length, Task, Theme};
+use iced::widget::{column, container, mouse_area, operation, row, scrollable, text, text_input};
+use iced::{Border, Color, Element, Length, Task, Theme, widget};
 
+use crate::compositor::{
+    Compositor, FullscreenStatus, HyprlandCompositor, NiriCompositor, Process,
+};
 use crate::config_management::{Config, parse_colour};
-use crate::compositor::{Compositor, FullscreenStatus, HyprlandCompositor, NiriCompositor, Process};
 use crate::search::filter_search;
 
-static TEXT_INPUT_ID: LazyLock<iced::widget::text_input::Id> =
-    LazyLock::new(|| iced::widget::text_input::Id::new("search_bar".to_string()));
-
-
+static TEXT_INPUT_ID: LazyLock<widget::Id> = LazyLock::new(|| widget::Id::new("search_bar"));
 
 /// Gets the current compositor used
 /// Currently only supports Hyprland and Niri
@@ -28,6 +27,7 @@ fn get_compositor() -> Arc<dyn Compositor + Send + Sync> {
 }
 
 /// Messages for allowing the application to understand what updates it has to do
+#[to_layer_message]
 #[derive(Debug, Clone)]
 pub enum Message {
     LoadClients,
@@ -41,7 +41,7 @@ pub enum Message {
     HoverWindow(usize),
     UpdateInput(String),
     FocusSearch,
-    DoNothing,
+    None,
 }
 
 /// All the goodies for whereami. stores literally everything
@@ -51,11 +51,11 @@ pub struct AppState {
     pub clients: Vec<Process>,
     pub clients_to_display: Vec<(Process, String)>,
     pub selected_idx: usize,
-    pub scroll_id: scrollable::Id,
+    pub scroll_id: widget::Id,
     pub config: Config,
     pub query: String,
     pub is_query: bool,
-    pub compositor: Arc<dyn Compositor + Send + Sync>
+    pub compositor: Arc<dyn Compositor + Send + Sync>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -72,7 +72,7 @@ impl Default for AppState {
             clients: Result::expect(compositor.get_windows(), "Failed"),
             clients_to_display: Vec::new(),
             selected_idx: 0,
-            scroll_id: scrollable::Id::new("item_scroll"),
+            scroll_id: widget::Id::new("item_scroll"),
             config: config,
             query: "".to_string(),
             is_query: false,
@@ -97,7 +97,7 @@ impl AppState {
                 Key::Named(iced::keyboard::key::Named::Escape) => Some(Message::Quit),
                 Key::Named(iced::keyboard::key::Named::Delete) => Some(Message::CloseWindow),
                 Key::Character(",") => Some(Message::FocusSearch),
-                _ => Some(Message::DoNothing),
+                _ => Some(Message::None),
             }
         }
         // how often the process list is refreshed
@@ -106,7 +106,12 @@ impl AppState {
                 self.config.behavior.refresh_interval,
             ))
             .map(|_| Message::LoadClients),
-            keyboard::on_key_press(handle_keys),
+            iced::keyboard::listen().map(|event| match event {
+                iced::keyboard::Event::KeyPressed { key, modifiers, .. } => {
+                    handle_keys(key, modifiers).unwrap()
+                }
+                _ => Message::None,
+            }),
         ])
     }
 
@@ -114,8 +119,11 @@ impl AppState {
         match msg {
             Message::LoadClients => {
                 let compositor = Arc::clone(&self.compositor);
-                Task::perform(async move { Result::expect(compositor.get_windows(),"err") }, Message::ClientsLoaded)
-            },
+                Task::perform(
+                    async move { Result::expect(compositor.get_windows(), "err") },
+                    Message::ClientsLoaded,
+                )
+            }
             Message::ClientsLoaded(clients) => {
                 self.clients = clients;
                 filter_search(self);
@@ -153,7 +161,7 @@ impl AppState {
                 //     self.clients[self.selected_idx].workspace
                 // );
 
-                scrollable::scroll_to::<Message>(
+                operation::scroll_to::<Message>(
                     self.scroll_id.clone(),
                     AbsoluteOffset {
                         x: 0.0,
@@ -166,7 +174,9 @@ impl AppState {
                 let cl = selected_client.clone();
                 let compositor = Arc::clone(&self.compositor);
                 // println!("{}\n{:?}", address, self.clients[self.selected_idx].title);
-                Task::perform(async move { compositor.close_window(cl).await}, |_| Message::LoadClients)
+                Task::perform(async move { compositor.close_window(cl).await }, |_| {
+                    Message::LoadClients
+                })
             }
             Message::SelectAndFocus(idx) => {
                 self.selected_idx = idx;
@@ -183,7 +193,9 @@ impl AppState {
                 let (selected_client, _) = &self.clients_to_display[self.selected_idx];
                 let cl = selected_client.clone();
                 // println!("{}\n{:?}", address, self.clients[self.selected_idx].title);
-                Task::perform(async move { compositor.close_window(cl).await}, |_| Message::LoadClients)
+                Task::perform(async move { compositor.close_window(cl).await }, |_| {
+                    Message::LoadClients
+                })
             }
             Message::HoverWindow(idx) => {
                 self.selected_idx = idx;
@@ -196,8 +208,9 @@ impl AppState {
                 self.is_query = !self.query.is_empty();
                 Task::none()
             }
-            Message::FocusSearch => focus(TEXT_INPUT_ID.clone()),
-            Message::DoNothing => Task::none(),
+            Message::FocusSearch => operation::focus(TEXT_INPUT_ID.clone()),
+            Message::None => Task::none(),
+            _ => unreachable!(),
         }
     }
 
@@ -211,8 +224,12 @@ impl AppState {
                 let title = name;
                 let workspace_id = client.workspace;
                 let status_col = match client.fullscreen {
-                    FullscreenStatus::Fullscreen => parse_colour(&self.config.colours.status.fullscreen),
-                    FullscreenStatus::Maximised => parse_colour(&self.config.colours.status.maximized),
+                    FullscreenStatus::Fullscreen => {
+                        parse_colour(&self.config.colours.status.fullscreen)
+                    }
+                    FullscreenStatus::Maximised => {
+                        parse_colour(&self.config.colours.status.maximized)
+                    }
                     _ => {
                         if client.floating {
                             parse_colour(&self.config.colours.status.floating)
@@ -236,8 +253,8 @@ impl AppState {
                 // These are split into parts so they can have different colours.
                 // implementation for ALL of these colours will be added sometime later.
                 // Currently only supports status colours
-                let title_part: iced_core::widget::Text<'_, _, _> = text(title);
-                let workspace_part = if workspace_id  > 50 {
+                let title_part = text(title);
+                let workspace_part = if workspace_id > 50 {
                     // atleast for me, my special workspace (in a
                     // scratch pad) is on workspace -98 -
                     // assuming it uses the same logic, any
@@ -254,7 +271,7 @@ impl AppState {
                 });
 
                 // brings all together
-                let item_content: iced::widget::Row<'_, _, _, _> =
+                let item_content: widget::Row<'_, _, _, _> =
                     row!(title_part, workspace_part, status_part)
                         .spacing(self.config.layout.spacing);
 
@@ -328,7 +345,7 @@ impl AppState {
                 .size(self.config.font.size),
         );
 
-        let scrollable_list: Element<'_, Message> = iced::widget::Scrollable::new(
+        let scrollable_list: Element<'_, Message> = widget::Scrollable::new(
             column(items).spacing(self.config.layout.spacing), // Put all client elements in a column
         )
         .width(Length::Fill)
@@ -336,10 +353,24 @@ impl AppState {
         .id(self.scroll_id.clone())
         .into();
 
-        column![search_bar_widget, scrollable_list,]
+        let root_layout = column![search_bar_widget, scrollable_list,]
             .spacing(self.config.layout.spacing)
             .width(Length::Fill)
+            .height(Length::Fill);
+
+        container(root_layout)
+            .width(Length::Fill)
             .height(Length::Fill)
+            .padding(self.config.layout.margin) // Outer margin
+            .style(|_theme| container::Style {
+                background: Some(parse_colour(&self.config.colours.background).into()),
+                border: Border {
+                    color: parse_colour(&self.config.colours.border_col),
+                    width: 2.0, // Adjust as needed
+                    radius: self.config.layout.border_radius.into(),
+                },
+                ..Default::default()
+            })
             .into()
     }
 }

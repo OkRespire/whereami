@@ -69,7 +69,7 @@ windowrulev2 = pin, class:(whereami) # this is so if you change workspaces it fo
 
 # TODO
 - [x] Added Niri Functionality
-- [ ] Change to iced layershell
+- [x] Change to iced layershell
 - [ ] Remove unwraps
 - [x] Rework flake.nix to be more "standard" - I dont know about standard but it's way better now
 

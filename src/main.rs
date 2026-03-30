@@ -2,9 +2,9 @@
  * All the commented out print statements are for debugging purporses
  * */
 
+mod compositor;
 mod config_management;
 mod hyprctl;
-mod compositor;
 mod search;
 mod ui;
 use std::os::unix::fs::FileExt;
@@ -12,7 +12,8 @@ use std::{fs, process};
 
 use crate::ui::AppState;
 use fd_lock::RwLock;
-
+use iced_layershell::reexport::Anchor;
+use iced_layershell::settings::{LayerShellSettings, StartMode};
 
 /// Little function i added so only **one** instance of whereami can be launched
 /// creates a pid file that is locked until the application has stopped running
@@ -51,24 +52,46 @@ fn acquire_lock() -> fd_lock::RwLockWriteGuard<'static, std::fs::File> {
     }
 }
 
-fn main() -> iced::Result {
+fn namespace() -> String {
+    String::from("whereami")
+}
+
+fn main() -> iced_layershell::Result {
     let _lock = acquire_lock();
     let config = config_management::Config::new().expect("Failed to load config");
 
     let theme = config.get_theme();
-    iced::application("whereami", AppState::update, AppState::view)
-        .theme(move |_| theme.clone())
-        .window(iced::window::Settings {
-            position: iced::window::Position::Centered,
-            decorations: config.window.decorations, //these may not be needed
-            transparent: config.window.transparent, // this too
-            size: iced::Size::new(config.window.width, config.window.height),
-            platform_specific: iced::window::settings::PlatformSpecific {
-                application_id: "whereami".to_string(),
-                override_redirect: false,
-            },
-            ..Default::default()
-        })
-        .subscription(AppState::subscription)
-        .run()
+    iced_layershell::application(
+        AppState::default,
+        namespace,
+        AppState::update,
+        AppState::view,
+    )
+    .theme(move |_state: &AppState| theme.clone())
+    .layer_settings(LayerShellSettings {
+        anchor: Anchor::empty(),
+        layer: iced_layershell::reexport::Layer::Top,
+        exclusive_zone: 0,
+        start_mode: StartMode::Active,
+        size: Some((config.window.width as u32, config.window.height as u32)),
+        keyboard_interactivity: iced_layershell::reexport::KeyboardInteractivity::Exclusive,
+        ..Default::default()
+    })
+    .subscription(AppState::subscription)
+    .run()
+    // iced::application("whereami", AppState::update, AppState::view)
+    //     .theme(move |_| theme.clone())
+    //     .window(iced::window::Settings {
+    //         position: iced::window::Position::Centered,
+    //         decorations: config.window.decorations, //these may not be needed
+    //         transparent: config.window.transparent, // this too
+    //         size: iced::Size::new(config.window.width, config.window.height),
+    //         platform_specific: iced::window::settings::PlatformSpecific {
+    //             application_id: "whereami".to_string(),
+    //             override_redirect: false,
+    //         },
+    //         ..Default::default()
+    //     })
+    //     .subscription(AppState::subscription)
+    //     .run()
 }
