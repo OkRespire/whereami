@@ -14,7 +14,6 @@ fd-lock = "4.0.4"
 fuzzy-matcher = "0.3.7"
 hyprland = "0.4.0-alpha.2"
 iced = { version = "0.14.0", features = ["debug", "tokio", "wgpu","tiny-skia"] }
-iced_core = "0.13.2"
 iced_layershell = {version = "0.17.1"}
 niri-ipc = "25.11.0"
 serde = "1.0.228"
