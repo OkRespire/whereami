@@ -1,17 +1,14 @@
-use std::{
-    process,
-    sync::{Arc },
-};
+use std::{process, sync::Arc};
 
 use iced::{
     Task,
-    widget::{self, operation::{self, AbsoluteOffset}},
+    widget::operation::{self, AbsoluteOffset},
 };
 use iced_layershell::to_layer_message;
 
 use crate::{compositor::Process, search::filter_search};
 
-use super::{AppState,TEXT_INPUT_ID};
+use super::{AppState, TEXT_INPUT_ID};
 
 /// Messages for allowing the application to understand what updates it has to do
 #[to_layer_message]
