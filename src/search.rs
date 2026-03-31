@@ -9,9 +9,8 @@ pub fn filter_search(state: &mut AppState) {
         state.clients_to_display = state
             .clients
             .iter()
-            .map(|client| {
-                (client.clone(), client.title.clone())
-            }).collect();
+            .map(|client| (client.clone(), client.title.clone()))
+            .collect();
         return;
     }
     let matcher = SkimMatcherV2::default();
@@ -22,11 +21,9 @@ pub fn filter_search(state: &mut AppState) {
         .filter_map(|client| {
             let client_title = client.title.clone();
 
-            if let Some(score) = matcher.fuzzy_match(&client_title, &state.query) {
-                Some((score, client.clone(), client_title.clone()))
-            } else {
-                None
-            }
+            matcher
+                .fuzzy_match(&client_title, &state.query)
+                .map(|score| (score, client.clone(), client_title.clone()))
         })
         .collect::<Vec<_>>();
 

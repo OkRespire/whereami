@@ -59,14 +59,14 @@ impl Compositor for HyprlandCompositor {
                     hyprland::data::FullscreenMode::Maximized => FullscreenStatus::Maximised,
                     _ => FullscreenStatus::None,
                 };
-                let workspace_id = cl.workspace.id.unsigned_abs() as u64;
+                let workspace_id = u64::from(cl.workspace.id.unsigned_abs());
                 Process {
                     pid: cl.pid,
                     title: cl.title.clone(),
                     window_id: None,
                     workspace: workspace_id,
                     fullscreen: fs_mode,
-                    floating: cl.floating.clone(),
+                    floating: cl.floating,
                 }
             })
             .collect::<Vec<Process>>();
@@ -76,7 +76,9 @@ impl Compositor for HyprlandCompositor {
 
     async fn focus_window(&self, process: Process) -> Result<()> {
         hyprland::dispatch::Dispatch::call_async(DispatchType::Workspace(
-            hyprland::dispatch::WorkspaceIdentifierWithSpecial::Id(process.workspace as i32),
+            hyprland::dispatch::WorkspaceIdentifierWithSpecial::Id(
+                i32::try_from(process.workspace).unwrap_or(1),
+            ),
         ))
         .await
         .context(format!(
@@ -88,7 +90,7 @@ impl Compositor for HyprlandCompositor {
 
     async fn close_window(&self, process: Process) -> Result<()> {
         hyprland::dispatch::Dispatch::call_async(DispatchType::CloseWindow(
-            hyprland::dispatch::WindowIdentifier::ProcessId(process.pid as u32),
+            hyprland::dispatch::WindowIdentifier::ProcessId(process.pid.cast_unsigned()),
         ))
         .await
         .context(format!("Could not close window {}", process.pid))?;
@@ -134,11 +136,10 @@ impl Compositor for NiriCompositor {
                 let ws_id = c
                     .workspace_id
                     .and_then(|id| active_workspaces.iter().position(|&x| x == id))
-                    .map(|pos| (pos + 1) as u64) // +1 because programmers count from 0, humans from 1
-                    .unwrap_or(0);
+                    .map_or(0, |pos| (pos + 1) as u64); // +1 because programmers count from 0, humans from 1
                 let pid = c.pid?;
                 Some(Process {
-                    pid: pid,
+                    pid,
                     title: c.title.as_deref().unwrap_or("Unknown").to_string(),
                     window_id: Some(c.id),
                     workspace: ws_id,

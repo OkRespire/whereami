@@ -11,9 +11,9 @@ use std::{fs, process};
 
 use crate::ui::AppState;
 use fd_lock::RwLock;
-use iced_layershell::{application, reexport};
 use iced_layershell::reexport::{Anchor, KeyboardInteractivity};
 use iced_layershell::settings::{LayerShellSettings, StartMode};
+use iced_layershell::{application, reexport};
 
 /// Little function i added so only **one** instance of whereami can be launched
 /// creates a pid file that is locked until the application has stopped running
@@ -24,31 +24,28 @@ fn acquire_lock() -> fd_lock::RwLockWriteGuard<'static, std::fs::File> {
     let file = fs::OpenOptions::new()
         .write(true)
         .create(true)
+        .truncate(true)
         .open(pid_loc)
         .expect("Failed to open lock file");
 
     // this is the main lock
     let lock = Box::leak(Box::new(RwLock::new(file)));
 
-    match lock.try_write() {
-        Ok(guard) => {
-            let pid = process::id().to_string();
-            guard
-                .write_at(pid.as_bytes(), 0)
-                .expect("Failed to write PID");
-            guard
-                .set_len(pid.len() as u64)
-                .expect("Failed to truncate file");
-            guard
-        }
-        Err(_) => {
-            let old_pid = std::fs::read_to_string(pid_loc).expect("Failed to read file");
-            eprintln!(
-                "Another instance is already running using this PID {}, at location {}",
-                old_pid, pid_loc
-            );
-            std::process::exit(1);
-        }
+    if let Ok(guard) = lock.try_write() {
+        let pid = process::id().to_string();
+        guard
+            .write_at(pid.as_bytes(), 0)
+            .expect("Failed to write PID");
+        guard
+            .set_len(pid.len() as u64)
+            .expect("Failed to truncate file");
+        guard
+    } else {
+        let old_pid = std::fs::read_to_string(pid_loc).expect("Failed to read file");
+        eprintln!(
+            "Another instance is already running using this PID {old_pid}, at location {pid_loc}",
+        );
+        std::process::exit(1);
     }
 }
 
@@ -73,7 +70,7 @@ fn main() -> iced_layershell::Result {
         layer: reexport::Layer::Top,
         exclusive_zone: 0,
         start_mode: StartMode::Active,
-        size: Some((config.window.width as u32, config.window.height as u32)),
+        size: Some((config.window.width, config.window.height)),
         keyboard_interactivity: KeyboardInteractivity::Exclusive,
         ..Default::default()
     })

@@ -19,8 +19,8 @@ pub struct Config {
 
 #[derive(Deserialize)]
 pub struct Window {
-    pub width: f32,
-    pub height: f32,
+    pub width: u32,
+    pub height: u32,
 }
 
 /// NOTE: Selected text *may* not be used... keeping it in because it could be useful
@@ -69,8 +69,8 @@ impl Default for Config {
         Config {
             theme: None,
             window: Window {
-                width: 900.0,
-                height: 500.0,
+                width: 900,
+                height: 500,
             },
             colours: Colours {
                 background: "#282828".to_string(),
@@ -104,7 +104,7 @@ impl Config {
     pub fn new() -> io::Result<Self> {
         let home = std::env::var("HOME").expect("HOME not set");
 
-        let config_path = format!("{}/.config/whereami/config.toml", home);
+        let config_path = format!("{home}/.config/whereami/config.toml");
 
         if std::path::Path::new(&config_path).exists() {
             let file_contents = fs::read_to_string(config_path)?;
@@ -120,11 +120,11 @@ impl Config {
     pub fn create_config() -> io::Result<()> {
         let home = std::env::var("HOME").expect("HOME not set");
 
-        let config_dir = format!("{}/.config/whereami", home);
+        let config_dir = format!("{home}/.config/whereami");
 
         fs::create_dir_all(&config_dir)?;
 
-        let mut file = fs::File::create(format!("{}/config.toml", &config_dir))?;
+        let mut file = fs::File::create(format!("{config_dir}/config.toml"))?;
 
         let config_content = b"# Uncomment if you want a custom theme.
             # All list of themes in iced docs (https://docs.rs/iced/latest/iced/theme/enum.Theme.html)
@@ -209,8 +209,8 @@ impl Config {
     }
 }
 
-pub fn parse_colour(val: &String) -> Color {
-    let hex = val.trim_start_matches("#");
+pub fn parse_colour(val: &str) -> Color {
+    let hex = val.trim_start_matches('#');
     let r = u8::from_str_radix(&hex[0..2], 16).unwrap_or(0);
     let g = u8::from_str_radix(&hex[2..4], 16).unwrap_or(0);
     let b = u8::from_str_radix(&hex[4..6], 16).unwrap_or(0);

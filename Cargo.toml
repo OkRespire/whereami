@@ -13,10 +13,17 @@ async-trait = "0.1.89"
 fd-lock = "4.0.4"
 fuzzy-matcher = "0.3.7"
 hyprland = "0.4.0-alpha.2"
-iced = { version = "0.14.0", features = ["debug", "tokio", "wgpu","tiny-skia"] }
+iced = { version = "0.14.0", features = ["debug", "tokio", "wgpu","tiny-skia", "advanced"] }
 iced_layershell = {version = "0.17.1"}
 niri-ipc = "25.11.0"
 serde = "1.0.228"
 serde_json = "1.0.145"
 toml = "0.9.8"
 winnow = "1.0.0"
+
+[lints.rust]
+warnings = "deny"
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+borrow_interior_mutable_const = "deny"

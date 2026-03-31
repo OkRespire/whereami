@@ -14,7 +14,7 @@ pub mod subscribe;
 pub mod update;
 pub mod view;
 
-pub const TEXT_INPUT_ID: LazyLock<widget::Id> = LazyLock::new(|| widget::Id::new("search_bar"));
+pub static TEXT_INPUT_ID: LazyLock<widget::Id> = LazyLock::new(|| widget::Id::new("search_bar"));
 
 /// All the goodies for whereami. stores literally everything
 /// if you want to add something else you need to store,
@@ -39,10 +39,10 @@ impl Default for AppState {
             clients_to_display: Vec::new(),
             selected_idx: 0,
             scroll_id: widget::Id::new("item_scroll"),
-            config: config,
-            query: "".to_string(),
+            config,
+            query: String::new(),
             is_query: false,
-            compositor: compositor,
+            compositor,
         }
     }
 }

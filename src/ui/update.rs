@@ -85,6 +85,7 @@ impl AppState {
                     self.scroll_id.clone(),
                     AbsoluteOffset {
                         x: 0.0,
+                        #[allow(clippy::cast_precision_loss)]
                         y: self.selected_idx as f32 * item_height,
                     },
                 )
