@@ -164,7 +164,7 @@ impl Config {
 
         file.write_all(config_content)?;
 
-        println!("Successfully created whereami.toml in {}", &config_dir);
+        println!("Successfully created config.toml in {}", &config_dir);
         Ok(())
     }
 
