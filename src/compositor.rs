@@ -1,3 +1,5 @@
+use std::sync::{Mutex, MutexGuard};
+
 use anyhow::{Context, Result};
 use hyprland::{
     dispatch::DispatchType,
@@ -35,7 +37,9 @@ pub(crate) trait Compositor {
 
 pub struct HyprlandCompositor;
 
-pub struct NiriCompositor;
+pub struct NiriCompositor {
+    pub socket: Mutex<Socket>,
+}
 
 #[async_trait::async_trait]
 impl Compositor for HyprlandCompositor {
@@ -98,10 +102,25 @@ impl Compositor for HyprlandCompositor {
     }
 }
 
+impl NiriCompositor {
+    pub fn new() -> Result<Self> {
+        Ok(Self {
+            socket: Mutex::new(Socket::connect().context("failed to connect to niri socket")?),
+        })
+    }
+    fn get_socket(&self) -> Result<MutexGuard<'_, Socket>> {
+        let mut socket = self.socket.lock().unwrap();
+        if socket.send(Request::Version).is_err() {
+            *socket = Socket::connect().context("failed to reconnect to niri socket")?;
+        }
+
+        Ok(socket)
+    }
+}
 #[async_trait::async_trait]
 impl Compositor for NiriCompositor {
     fn get_windows(&self) -> Result<Vec<Process>> {
-        let mut socket = Socket::connect().context("failed to connect to niri socket")?;
+        let mut socket = self.get_socket()?;
         let reply = socket
             .send(Request::Windows)
             .context("Failed to send windows request")?;
@@ -153,7 +172,7 @@ impl Compositor for NiriCompositor {
     }
 
     async fn focus_window(&self, process: Process) -> Result<()> {
-        let mut socket = Socket::connect().context("failed to connect to niri socket")?;
+        let mut socket = self.get_socket()?;
         let reply = socket
             .send(Request::Action(Action::FocusWindow {
                 id: process.window_id.unwrap(),
@@ -166,7 +185,7 @@ impl Compositor for NiriCompositor {
     }
 
     async fn close_window(&self, process: Process) -> Result<()> {
-        let mut socket = Socket::connect().context("failed to connect to niri socket")?;
+        let mut socket = self.get_socket()?;
         let reply = socket
             .send(Request::Action(Action::CloseWindow {
                 id: process.window_id,

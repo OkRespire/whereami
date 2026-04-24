@@ -51,7 +51,8 @@ impl Default for AppState {
 /// Currently only supports Hyprland and Niri
 fn get_compositor() -> Arc<dyn Compositor + Send + Sync> {
     if std::env::var("NIRI_SOCKET").is_ok() {
-        return Arc::new(NiriCompositor) as Arc<dyn Compositor + Send + Sync>;
+        return Arc::new(NiriCompositor::new().expect("Failed to connect to niri socket"))
+            as Arc<dyn Compositor + Send + Sync>;
     } else if std::env::var("HYPRLAND_INSTANCE_SIGNATURE").is_ok() {
         return Arc::new(HyprlandCompositor) as Arc<dyn Compositor + Send + Sync>;
     }
