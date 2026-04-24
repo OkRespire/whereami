@@ -34,8 +34,9 @@ impl Default for AppState {
     fn default() -> Self {
         let config = Config::new().expect("Failed to load config");
         let compositor = get_compositor();
+        let clients = Result::expect(compositor.get_windows(), "Failed");
         AppState {
-            clients: Result::expect(compositor.get_windows(), "Failed"),
+            clients: clients,
             clients_to_display: Vec::new(),
             selected_idx: 0,
             scroll_id: widget::Id::new("item_scroll"),
