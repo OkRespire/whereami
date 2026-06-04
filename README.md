@@ -49,12 +49,6 @@ binds {
 
 // For hyprland
 bind = SUPER, D, exec, whereami
-# for window rules
-# NOTE: Currently this does not work because of new window rules... for some reason the width and height also have to be hard coded into it. I will probably migrate all this code to iced-layershell
-
-windowrulev2 = float, class:(whereami)
-windowrulev2 = center, class:(whereami)
-windowrulev2 = pin, class:(whereami) # this is so if you change workspaces it follows you
 ```
 
 - Arrow keys up/down = navigate (or use the mouse!)
