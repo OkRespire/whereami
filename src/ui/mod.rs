@@ -1,12 +1,10 @@
-use crate::compositor::HyprlandCompositor;
-use crate::compositor::NiriCompositor;
 use std::sync::Arc;
 use std::sync::LazyLock;
 
 use iced::widget;
 
 use crate::{
-    compositor::{Compositor, Process},
+    compositor::{Compositor, HyprlandCompositor, NiriCompositor, Process},
     config_management::Config,
 };
 
